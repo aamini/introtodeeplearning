@@ -1,0 +1,9 @@
+.DS_Store
+.ipynb_checkpoints
+
+
+lab1/*.pyc
+lab2/*.pyc
+*.pyc
+*.h5
+lab2/logs/*

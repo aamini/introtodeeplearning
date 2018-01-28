@@ -1,0 +1,2 @@
+model_checkpoint_path: "/tmp/tensorboard-layers-api/3f41a2/model.ckpt"
+all_model_checkpoint_paths: "/tmp/tensorboard-layers-api/3f41a2/model.ckpt"
