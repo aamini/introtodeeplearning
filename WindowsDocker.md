@@ -199,7 +199,7 @@ Toolbox default vbox image
 
 On the keybord press
 
-    Windoes Key + R
+    Windows Key + R
 
 wait
 
