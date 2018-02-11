@@ -40,7 +40,7 @@ Where will be useing **Virtualbox**
 
 on the keybord press
 
-    Windoes Key + R
+    Windows Key + R
 
 wait...
 
@@ -66,7 +66,7 @@ chage the projectPath to where you want your
     
 On the keybord press
 
-    Windoes Key + S
+    Windows Key + S
     
 now seach an open 
 
@@ -93,7 +93,7 @@ now close the window
 
 On the keybord press
 
-    Windoes Key + R
+    Windows Key + R
 
 wait
 
@@ -131,7 +131,7 @@ chage the projectPath to where you want your
 
 On the keybord press
 
-    Windoes Key + S
+    Windows Key + S
     
 now seach an open 
 
