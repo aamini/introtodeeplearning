@@ -5,7 +5,7 @@ To run these labs, first you must install the class docker container, which is a
 
 For additional help to install Docker on Windows please see: [this link](WindowsDocker.md) -- thanks to Elrashid for putting it together! 
 
-## Starting the enviornment
+## Starting the environment
 Once you donwload docker all you need to do is run the container to start! This can be done by running the following command in your command terminal:
 ```
 docker run -p 8888:8888 -p 6006:6006 -v /path/to/introtodeeplearning_labs:/notebooks/introtodeeplearning_labs mit6s191/iap2018:labs
