@@ -22,12 +22,12 @@ class PPBFaceEvaluator:
         image_dir = os.path.join(self.ppb_root, "imgs")
         image_files = sorted(os.listdir(image_dir))[::4] #sample every 4 images for computation time in the lab
 
-    self.raw_images = {
-        'male_darker':[],
-        'male_lighter':[],
-        'female_darker':[],
-        'female_lighter':[],
-    }
+        self.raw_images = {
+            'male_darker':[],
+            'male_lighter':[],
+            'female_darker':[],
+            'female_lighter':[],
+        }
 
     for filename in image_files:
         if not filename.endswith(".jpg"):
