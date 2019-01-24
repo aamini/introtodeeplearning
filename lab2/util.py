@@ -202,3 +202,10 @@ def create_progress_bar(text=None):
       text,
   ])
   return bar
+
+def display_model(model):
+  tf.keras.utils.plot_model(model,
+             to_file='tmp.png',
+             show_shapes=True)
+  from IPython.display import Image
+  return Image('tmp.png')
