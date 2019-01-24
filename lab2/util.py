@@ -3,6 +3,8 @@ import os
 import numpy as np
 import tensorflow as tf
 import time
+import h5py
+import sys
 
 
 IM_SHAPE = (64, 64, 3)
@@ -51,6 +53,8 @@ class TrainingDatasetLoader(object):
 
     def get_all_train_faces(self):
         return self.images[ self.pos_train_inds ]
+
+
 
 class PPBFaceEvaluator:
     ''' Evaluate on the PPB dataset'''
