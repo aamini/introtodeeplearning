@@ -1,6 +1,9 @@
 import cv2
 import os
 import numpy as np
+import tensorflow as tf
+import time
+
 
 IM_SHAPE = (64, 64, 3)
 
@@ -44,7 +47,6 @@ class PPBFaceEvaluator:
 
 
     def evaluate(self, models_to_test, gender, skin_color, output_idx=0, from_logit=False):
-        import time
         patch_stride = 0.2
         patch_depth = 2
         correct_predictions = [0.0]*len(models_to_test)
