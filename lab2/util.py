@@ -4,12 +4,91 @@ import numpy as np
 
 IM_SHAPE = (64, 64, 3)
 
-# function to slide a square across image and extract square regions
-# img = the image
-# stride = (0,1], provides the fraction of the dimension for which to slide to generate a crop
-# max_size = maximum square size
-# min_size = minimum square size
-# n = number of different sizes including min_size, max_size
+class PPBFaceEvaluator:
+    ''' Evaluate on the PPB dataset'''
+    def __init__(self):
+
+        path_to_faces = tf.keras.utils.get_file('ppb', 'https://www.dropbox.com/s/l0lp6qxeplumouf/PPB.tar?dl=1', extract=True)
+        self.ppb_root = os.path.join(os.path.split(path_to_faces)[0], 'PPB-2017')
+
+        ppb_anno = os.path.join(self.ppb_root,'PPB-2017-metadata.csv')
+
+        self.anno_dict = {}
+        with open(ppb_anno) as f:
+            for line in f.read().split('\r'):
+                ind, name, gender, numeric, skin, country = line.split(',')
+                self.anno_dict[name] = (gender.lower(),skin.lower())
+
+        image_dir = os.path.join(self.ppb_root, "imgs")
+        image_files = sorted(os.listdir(image_dir))[::4] #sample every 4 images for computation time in the lab
+
+    self.raw_images = {
+        'male_darker':[],
+        'male_lighter':[],
+        'female_darker':[],
+        'female_lighter':[],
+    }
+
+    for filename in image_files:
+        if not filename.endswith(".jpg"):
+            continue
+        image = cv2.imread(os.path.join(image_dir,filename))[:,:,::-1]
+        gender, skin = self.anno_dict[filename]
+        self.raw_images[gender+'_'+skin].append(image)
+
+
+    def get_sample_faces_from_demographic(self, gender, skin_color):
+        key = self.__get_key(gender, skin_color)
+        data = self.raw_images[key][100]/255.
+        return data
+
+
+    def evaluate(self, models_to_test, gender, skin_color, output_idx=0, from_logit=False):
+        import time
+        patch_stride = 0.2
+        patch_depth = 2
+        correct_predictions = [0.0]*len(models_to_test)
+
+        key = self.__get_key(gender, skin_color)
+        num_faces = len(self.raw_images[key])
+        bar = create_progress_bar()
+        for face_idx in bar(range(num_faces)):
+
+            image = self.raw_images[key][face_idx]
+            height, width, _ = image.shape
+
+            patches, bboxes = slide_square(image, patch_stride, width/2, width, patch_depth)
+            patches = tf.cast(tf.constant(patches, dtype=tf.uint8), tf.float32)/255.
+
+            for model_idx, model in enumerate(models_to_test):
+                out = model(patches)
+                y = out if output_idx is None else out[output_idx]
+                y = y.numpy()
+                y_inds = np.argsort(y.flatten())
+                most_likely_prob = y[y_inds[-1]]
+                if (from_logit and most_likely_prob >= 0.0) or \
+                   (not from_logit and most_likely_prob >= 0.5):
+                        correct_predictions[model_idx] += 1
+
+        accuracy = [correct_predictions[i]/num_faces*100 for i,_ in enumerate(models_to_test)]
+        return accuracy
+
+
+    def __get_key(self, gender, skin_color):
+        gender = gender.lower()
+        skin_color = skin_color.lower()
+        assert gender in ['male', 'female']
+        assert skin_color in ['lighter', 'darker']
+        return '{}_{}'.format(gender, skin_color)
+
+
+
+''' function to slide a square across image and extract square regions
+img = the image
+stride = (0,1], provides the fraction of the dimension for which to slide to generate a crop
+max_size = maximum square size
+min_size = minimum square size
+n = number of different sizes including min_size, max_size '''
 def slide_square(img, stride, min_size, max_size, n):
     img_h, img_w = img.shape[:2]
 
