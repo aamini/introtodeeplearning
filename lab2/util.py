@@ -29,12 +29,12 @@ class PPBFaceEvaluator:
             'female_lighter':[],
         }
 
-    for filename in image_files:
-        if not filename.endswith(".jpg"):
-            continue
-        image = cv2.imread(os.path.join(image_dir,filename))[:,:,::-1]
-        gender, skin = self.anno_dict[filename]
-        self.raw_images[gender+'_'+skin].append(image)
+        for filename in image_files:
+            if not filename.endswith(".jpg"):
+                continue
+            image = cv2.imread(os.path.join(image_dir,filename))[:,:,::-1]
+            gender, skin = self.anno_dict[filename]
+            self.raw_images[gender+'_'+skin].append(image)
 
 
     def get_sample_faces_from_demographic(self, gender, skin_color):
