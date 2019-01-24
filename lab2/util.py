@@ -95,7 +95,7 @@ class PPBFaceEvaluator:
         return data
 
 
-    def evaluate(self, models_to_test, gender, skin_color, output_idx=0, from_logit=False):
+    def evaluate(self, models_to_test, gender, skin_color, output_idx=None, from_logit=False):
         patch_stride = 0.2
         patch_depth = 2
         correct_predictions = [0.0]*len(models_to_test)
