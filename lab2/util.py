@@ -91,7 +91,7 @@ class PPBFaceEvaluator:
 
     def get_sample_faces_from_demographic(self, gender, skin_color):
         key = self.__get_key(gender, skin_color)
-        data = self.raw_images[key][100]/255.
+        data = self.raw_images[key][50]/255.
         return data
 
 
