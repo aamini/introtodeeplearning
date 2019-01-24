@@ -120,3 +120,36 @@ def slide_square(img, stride, min_size, max_size, n):
                 square_bbox.append(square_corners)
 
     return square_images, square_bbox
+
+
+
+
+#####################################
+def custom_progress_text(message):
+  import progressbar
+  from string import Formatter
+
+  message_ = message.replace('(', '{')
+  message_ = message_.replace(')', '}')
+
+  keys = [key[1] for key in Formatter().parse(message_)]
+
+  ids = {}
+  for key in keys:
+    if key is not None:
+      ids[key] = float('nan')
+
+  msg = progressbar.FormatCustomText(message, ids)
+  return msg
+
+def create_progress_bar(text=None):
+  import progressbar
+  if text is None:
+    text = progressbar.FormatCustomText('')
+  bar = progressbar.ProgressBar(widgets=[
+      progressbar.Percentage(),
+      progressbar.Bar(),
+      progressbar.AdaptiveETA(), '  ',
+      text,
+  ])
+  return bar
