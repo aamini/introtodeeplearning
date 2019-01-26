@@ -33,6 +33,9 @@ class TrainingDatasetLoader(object):
 
     def get_train_size(self):
         return self.train_inds.shape[0]
+    
+    def get_train_steps_per_epoch(self, batch_size, factor=10):
+        return self.get_train_size()//factor//batch_size
 
     def get_batch(self, n, only_faces=False, p_pos=None, p_neg=None, return_inds=False):
         if only_faces:
