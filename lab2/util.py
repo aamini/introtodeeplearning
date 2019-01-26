@@ -1,5 +1,6 @@
 import cv2
 import os
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import time
@@ -209,3 +210,18 @@ def display_model(model):
              show_shapes=True)
   from IPython.display import Image
   return Image('tmp.png')
+
+  
+def plot_sample(x,y,vae):
+    plt.figure(figsize=(2,1))
+    plt.subplot(1, 2, 1)
+
+    idx = np.where(y.numpy()==1)[0][0]
+    plt.imshow(x[idx])
+    plt.grid(False)
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(vae(x)[idx])
+    plt.grid(False)
+
+    plt.show()
