@@ -225,3 +225,35 @@ def plot_sample(x,y,vae):
     plt.grid(False)
 
     plt.show()
+
+    
+class LossHistory:
+  def __init__(self, smoothing_factor=0.0):
+    self.alpha = smoothing_factor
+    self.loss = []
+  def append(self, value): 
+    self.loss.append( self.alpha*self.loss[-1] + (1-self.alpha)*value if len(self.loss)>0 else value )
+  def get(self): 
+    return self.loss
+
+class PeriodicPlotter:
+  def __init__(self, sec, xlabel='', ylabel=''):
+    from IPython import display as ipythondisplay
+    import matplotlib.pyplot as plt
+    import time
+    
+    self.xlabel = xlabel
+    self.ylabel = ylabel
+    self.sec = sec
+    
+    self.tic = time.time()
+    
+  def plot(self, data): 
+    if time.time() - self.tic > self.sec:
+      plt.cla()
+      plt.plot(data)
+      plt.xlabel(self.xlabel); plt.ylabel(self.ylabel)
+      ipythondisplay.clear_output(wait=True)
+      ipythondisplay.display(plt.gcf())
+      
+      self.tic = time.time()
