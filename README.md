@@ -1,17 +1,8 @@
-# MIT 6.S191: Introduction to Deep Learning
+# MIT 6.S191 2019: Introduction to Deep Learning
 
-## Installation:
-To run these labs, first you must install the class docker container, which is available for free on the [DockerHub](https://hub.docker.com/r/mit6s191/iap2018/). This can be done by first installing Docker: [Ubuntu](https://www.docker.com/docker-ubuntu), [Mac OSX](https://www.docker.com/docker-mac), [Windows](https://www.docker.com/docker-windows)
-
-For additional help to install Docker on Windows please see: [this link](WindowsDocker.md) -- thanks to Elrashid for putting it together! 
-
-## Starting the environment
-Once you donwload docker all you need to do is run the container to start! This can be done by running the following command in your command terminal:
-```
-docker run -p 8888:8888 -p 6006:6006 -v /path/to/introtodeeplearning_labs:/notebooks/introtodeeplearning_labs mit6s191/iap2018:labs
-```
-Make sure you replace `/path/to/introtodeeplearning_labs` with the correct path to this github repo.
+## Opening the labs in Google Colaboratory:
+The 2019 6.S191 labs will be run in Google's Colaboratory, a Jupyter notebook environment that runs entirely in the cloud. To run these labs, you must have a Google account. Go to [Colab](https://colab.research.google.com/), and then select the "GitHub" tab in the pop-up window. Enter the GitHub link to the [6.S191 Repository](https://github.com/aamini/introtodeeplearning_labs/), and open the relevant lab.
 
 ## Running the labs
-Now, to run the labs, open the Jupyter notebook on `localhost:8888` and enter the `lab1` or `lab2` directory. Go through the notebooks and fill in the `#TODO` cells to get the code to compile for yourself!
+Now, to run the labs, open the Jupyter notebook on Colab. Navigate to the "Runtime" tab --> "Change runtime type". In the pop-up window, under "Runtime type" select "Python 2", and under "Hardware accelerator" select "GPU". Go through the notebooks and fill in the `#TODO` cells to get the code to compile for yourself!
 
