@@ -1,5 +1,6 @@
 import cv2
 import os
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import time
@@ -32,6 +33,9 @@ class TrainingDatasetLoader(object):
 
     def get_train_size(self):
         return self.train_inds.shape[0]
+    
+    def get_train_steps_per_epoch(self, batch_size, factor=10):
+        return self.get_train_size()//factor//batch_size
 
     def get_batch(self, n, only_faces=False, p_pos=None, p_neg=None, return_inds=False):
         if only_faces:
@@ -97,7 +101,7 @@ class PPBFaceEvaluator:
 
     def evaluate(self, models_to_test, gender, skin_color, output_idx=None, from_logit=False):
         patch_stride = 0.2
-        patch_depth = 2
+        patch_depth = 5
         correct_predictions = [0.0]*len(models_to_test)
 
         key = self.__get_key(gender, skin_color)
@@ -209,3 +213,50 @@ def display_model(model):
              show_shapes=True)
   from IPython.display import Image
   return Image('tmp.png')
+
+  
+def plot_sample(x,y,vae):
+    plt.figure(figsize=(2,1))
+    plt.subplot(1, 2, 1)
+
+    idx = np.where(y.numpy()==1)[0][0]
+    plt.imshow(x[idx])
+    plt.grid(False)
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(vae(x)[idx])
+    plt.grid(False)
+
+    plt.show()
+
+    
+class LossHistory:
+  def __init__(self, smoothing_factor=0.0):
+    self.alpha = smoothing_factor
+    self.loss = []
+  def append(self, value): 
+    self.loss.append( self.alpha*self.loss[-1] + (1-self.alpha)*value if len(self.loss)>0 else value )
+  def get(self): 
+    return self.loss
+
+class PeriodicPlotter:
+  def __init__(self, sec, xlabel='', ylabel=''):
+    from IPython import display as ipythondisplay
+    import matplotlib.pyplot as plt
+    import time
+    
+    self.xlabel = xlabel
+    self.ylabel = ylabel
+    self.sec = sec
+    
+    self.tic = time.time()
+    
+  def plot(self, data): 
+    if time.time() - self.tic > self.sec:
+      plt.cla()
+      plt.plot(data)
+      plt.xlabel(self.xlabel); plt.ylabel(self.ylabel)
+      ipythondisplay.clear_output(wait=True)
+      ipythondisplay.display(plt.gcf())
+      
+      self.tic = time.time()
