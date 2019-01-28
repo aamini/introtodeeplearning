@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import time
+from IPython import display as ipythondisplay
+import matplotlib.pyplot as plt
+import time
 
 #####################################
 def custom_progress_text(message):
