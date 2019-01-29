@@ -73,7 +73,7 @@ class LossHistory:
     return self.loss
 
 class PeriodicPlotter:
-  def __init__(self, sec, xlabel='', ylabel=''):
+  def __init__(self, sec, xlabel='', ylabel='', scale=None):
     from IPython import display as ipythondisplay
     import matplotlib.pyplot as plt
     import time
@@ -81,6 +81,7 @@ class PeriodicPlotter:
     self.xlabel = xlabel
     self.ylabel = ylabel
     self.sec = sec
+    self.scale = scale
 
     self.tic = time.time()
 
