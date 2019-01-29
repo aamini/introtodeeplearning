@@ -61,7 +61,7 @@ class TrainingDatasetLoader(object):
 
 class PPBFaceEvaluator:
     ''' Evaluate on the PPB dataset'''
-    def __init__(self):
+    def __init__(self, skip=5):
 
         path_to_faces = tf.keras.utils.get_file('ppb', 'https://www.dropbox.com/s/l0lp6qxeplumouf/PPB.tar?dl=1', extract=True)
         self.ppb_root = os.path.join(os.path.split(path_to_faces)[0], 'PPB-2017')
@@ -75,7 +75,7 @@ class PPBFaceEvaluator:
                 self.anno_dict[name] = (gender.lower(),skin.lower())
 
         image_dir = os.path.join(self.ppb_root, "imgs")
-        image_files = sorted(os.listdir(image_dir))[::4] #sample every 4 images for computation time in the lab
+        image_files = sorted(os.listdir(image_dir))[::skip] #sample every 4 images for computation time in the lab
 
         self.raw_images = {
             'male_darker':[],
