@@ -105,7 +105,9 @@ class PPBFaceEvaluator:
 
         key = self.__get_key(gender, skin_color)
         num_faces = len(self.raw_images[key])
-        bar = create_progress_bar()
+        
+        import progressbar
+        bar = progressbar.ProgressBar()
         for face_idx in bar(range(num_faces)):
 
             image = self.raw_images[key][face_idx]
@@ -172,15 +174,3 @@ def slide_square(img, stride, min_size, max_size, n):
                 square_bbox.append(square_corners)
 
     return square_images, square_bbox
-
-def create_progress_bar(text=None):
-  import progressbar
-  if text is None:
-    text = progressbar.FormatCustomText('')
-  bar = progressbar.ProgressBar(widgets=[
-      progressbar.Percentage(),
-      progressbar.Bar(),
-      progressbar.AdaptiveETA(), '  ',
-      text,
-  ])
-  return bar
