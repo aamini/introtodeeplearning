@@ -73,13 +73,14 @@ class LossHistory:
     return self.loss
 
 class PeriodicPlotter:
-  def __init__(self, sec, xlabel='', ylabel=''):
+  def __init__(self, sec, xlabel='', ylabel='', scale=None):
     from IPython import display as ipythondisplay
     import matplotlib.pyplot as plt
     import time
     
     self.xlabel = xlabel
     self.ylabel = ylabel
+    self.scale = scale
     self.sec = sec
     
     self.tic = time.time()
@@ -87,7 +88,17 @@ class PeriodicPlotter:
   def plot(self, data): 
     if time.time() - self.tic > self.sec:
       plt.cla()
-      plt.plot(data)
+      
+      if self.scale is None: 
+        plt.plot(data)
+      elif self.scale == 'semilogx': 
+        plt.semilogx(data)
+      elif self.scale == 'semilogy': 
+        plt.semilogy(data)
+      elif self.scale == 'loglog': 
+        plt.loglog(data)
+      else: raise ValueError("unrecognized parameter scale {}".format(self.scale)
+        
       plt.xlabel(self.xlabel); plt.ylabel(self.ylabel)
       ipythondisplay.clear_output(wait=True)
       ipythondisplay.display(plt.gcf())
