@@ -97,7 +97,8 @@ class PeriodicPlotter:
         plt.semilogy(data)
       elif self.scale == 'loglog': 
         plt.loglog(data)
-      else: raise ValueError("unrecognized parameter scale {}".format(self.scale)
+      else: 
+        raise ValueError("unrecognized parameter scale {}".format(self.scale))
         
       plt.xlabel(self.xlabel); plt.ylabel(self.ylabel)
       ipythondisplay.clear_output(wait=True)
