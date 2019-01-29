@@ -7,6 +7,7 @@ import time
 import h5py
 import sys
 
+from ... import *
 
 IM_SHAPE = (64, 64, 3)
 
