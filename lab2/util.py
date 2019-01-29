@@ -7,8 +7,6 @@ import time
 import h5py
 import sys
 
-from ... import *
-
 IM_SHAPE = (64, 64, 3)
 
 
@@ -175,3 +173,14 @@ def slide_square(img, stride, min_size, max_size, n):
 
     return square_images, square_bbox
 
+def create_progress_bar(text=None):
+  import progressbar
+  if text is None:
+    text = progressbar.FormatCustomText('')
+  bar = progressbar.ProgressBar(widgets=[
+      progressbar.Percentage(),
+      progressbar.Bar(),
+      progressbar.AdaptiveETA(), '  ',
+      text,
+  ])
+  return bar
