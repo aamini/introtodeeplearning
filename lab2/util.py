@@ -20,8 +20,8 @@ class TrainingDatasetLoader(object):
 
         print "Loading data into memory..."
         sys.stdout.flush()
-        self.images = self.cache['images'][:]
-        self.labels = self.cache['labels'][:]
+        self.images = self.cache['images'][::10]
+        self.labels = self.cache['labels'][::10]
         self.image_dims = self.images.shape
         n_train_samples = self.image_dims[0]
 
@@ -61,7 +61,7 @@ class TrainingDatasetLoader(object):
 
 class PPBFaceEvaluator:
     ''' Evaluate on the PPB dataset'''
-    def __init__(self, skip=5):
+    def __init__(self, skip=4):
 
         path_to_faces = tf.keras.utils.get_file('ppb', 'https://www.dropbox.com/s/l0lp6qxeplumouf/PPB.tar?dl=1', extract=True)
         self.ppb_root = os.path.join(os.path.split(path_to_faces)[0], 'PPB-2017')
@@ -98,7 +98,7 @@ class PPBFaceEvaluator:
         return data
 
 
-    def evaluate(self, models_to_test, gender, skin_color, output_idx=None, from_logit=False, patch_stride=0.15, patch_depth=2):
+    def evaluate(self, models_to_test, gender, skin_color, output_idx=None, from_logit=False, patch_stride=0.2, patch_depth=5):
         correct_predictions = [0.0]*len(models_to_test)
 
         key = self.__get_key(gender, skin_color)
