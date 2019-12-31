@@ -1,5 +1,5 @@
-from lab1 import *
-from lab2 import *
+from .lab1 import *
+from .lab2 import *
 # from lab3 import *
 
 
@@ -88,7 +88,7 @@ class PeriodicPlotter:
   def plot(self, data):
     if time.time() - self.tic > self.sec:
       plt.cla()
-      
+
       if self.scale is None:
         plt.plot(data)
       elif self.scale == 'semilogx':

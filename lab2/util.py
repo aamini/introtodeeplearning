@@ -13,12 +13,12 @@ IM_SHAPE = (64, 64, 3)
 class TrainingDatasetLoader(object):
     def __init__(self, data_path):
 
-        print "Opening {}".format(data_path)
+        print ("Opening {}".format(data_path))
         sys.stdout.flush()
 
         self.cache = h5py.File(data_path, 'r')
 
-        print "Loading data into memory..."
+        print ("Loading data into memory...")
         sys.stdout.flush()
         self.images = self.cache['images'][:]
         self.labels = self.cache['labels'][:]

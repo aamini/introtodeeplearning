@@ -1,13 +1,21 @@
 import os
 import subprocess
 import regex as re
+import urllib
 
+DATA_URL = 'https://raw.githubusercontent.com/aamini/introtodeeplearning_labs/2019/lab1/data/irish.abc'
 
-def extract_song_snippet(generated_text):
+def load_training_data():
+    stream = urllib.request.urlopen(DATA_URL)
+    text = stream.read().decode("utf-8")
+    songs = extract_song_snippet(text)
+    return songs
+
+def extract_song_snippet(text):
     pattern = '\n\n(.*?)\n\n'
-    search_results = re.findall(pattern, generated_text, overlapped=True, flags=re.DOTALL)
+    search_results = re.findall(pattern, text, overlapped=True, flags=re.DOTALL)
     songs = [song for song in search_results]
-    print "Found {} possible songs in generated texts".format(len(songs))
+    print("Found {} songs in text".format(len(songs)))
     return songs
 
 def save_song_to_abc(song, filename="tmp"):
@@ -25,14 +33,19 @@ def play_wav(wav_file):
     from IPython.display import Audio
     return Audio(wav_file)
 
+def play_song(song):
+    basename = save_song_to_abc(song)
+    ret = abc2wav(basename+'.abc')
+    if ret == 0: #did not suceed
+        return play_wav(basename+'.wav')
+    return None
+
 def play_generated_song(generated_text):
     songs = extract_song_snippet(generated_text)
     if len(songs) == 0:
-        print "No valid songs found in generated text. Try training the model longer or increasing the amount of generated music to ensure complete songs are generated!"
+        print("No valid songs found in generated text. Try training the model longer or increasing the amount of generated music to ensure complete songs are generated!")
 
+    import pdb; pdb.set_trace()
     for song in songs:
-        basename = save_song_to_abc(song)
-        ret = abc2wav(basename+'.abc')
-        if ret == 0: #did not suceed
-            return play_wav(basename+'.wav')
-    print "None of the songs were valid, try training longer to improve syntax."
+        play_song(song)
+    print("None of the songs were valid, try training longer to improve syntax.")
