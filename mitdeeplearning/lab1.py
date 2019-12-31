@@ -6,11 +6,11 @@ import urllib
 from IPython.display import Audio
 
 
-DATA_URL = 'https://raw.githubusercontent.com/aamini/introtodeeplearning_labs/2019/lab1/data/irish.abc'
+cwd = os.path.dirname(__file__)
 
 def load_training_data():
-    stream = urllib.request.urlopen(DATA_URL)
-    text = stream.read().decode("utf-8")
+    with open(os.path.join(cwd, "data", "irish.abc"), "r") as f:
+        text = f.read()
     songs = extract_song_snippet(text)
     return songs
 
@@ -28,7 +28,7 @@ def save_song_to_abc(song, filename="tmp"):
     return filename
 
 def abc2wav(abc_file):
-    path_to_tool = os.path.join(os.path.dirname(__file__), 'bin', 'abc2wav')
+    path_to_tool = os.path.join(cwd, 'bin', 'abc2wav')
     print("path_to_tool", path_to_tool)
 
     cmd = "{} {}".format(path_to_tool, abc_file)
