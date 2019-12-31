@@ -12,8 +12,9 @@ install_deps = [
     'numpy',
     'regex',
 ]
-if get_dist('tensorflow>=2.0.0') is None and get_dist('tensorflow_gpu>=2.0.0') is None:
-    install_deps.append('tensorflow>=2.0.0a')
+tf_ver = '2.0.0a'
+if get_dist('tensorflow>='+tf_ver) is None and get_dist('tensorflow_gpu>='+tf_ver) is None:
+    install_deps.append('tensorflow>='+tf_ver)
 
 setup(
   name = 'mitdeeplearning',         # How you named your package folder (MyLib)
