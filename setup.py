@@ -11,6 +11,9 @@ def get_dist(pkgname):
 install_deps = [
     'numpy',
     'regex',
+    'progressbar',
+    'tqdm',
+
 ]
 tf_ver = '2.0.0a'
 if get_dist('tensorflow>='+tf_ver) is None and get_dist('tensorflow_gpu>='+tf_ver) is None:

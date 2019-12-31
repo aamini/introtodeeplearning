@@ -1,19 +1,16 @@
-from .lab1 import *
-from .lab2 import *
-# from lab3 import *
-
-
 import matplotlib.pyplot as plt
-import numpy as np
 import tensorflow as tf
 import time
+import progressbar
+
 from IPython import display as ipythondisplay
+from string import Formatter
+
+
 
 
 #####################################
 def custom_progress_text(message):
-  import progressbar
-  from string import Formatter
 
   message_ = message.replace('(', '{')
   message_ = message_.replace(')', '}')
@@ -29,7 +26,6 @@ def custom_progress_text(message):
   return msg
 
 def create_progress_bar(text=None):
-  import progressbar
   if text is None:
     text = progressbar.FormatCustomText('')
   bar = progressbar.ProgressBar(widgets=[
@@ -44,23 +40,7 @@ def display_model(model):
   tf.keras.utils.plot_model(model,
              to_file='tmp.png',
              show_shapes=True)
-  from IPython.display import Image
-  return Image('tmp.png')
-
-
-def plot_sample(x,y,vae):
-    plt.figure(figsize=(2,1))
-    plt.subplot(1, 2, 1)
-
-    idx = np.where(y.numpy()==1)[0][0]
-    plt.imshow(x[idx])
-    plt.grid(False)
-
-    plt.subplot(1, 2, 2)
-    plt.imshow(vae(x)[idx])
-    plt.grid(False)
-
-    plt.show()
+  return ipythondisplay.Image('tmp.png')
 
 
 class LossHistory:
@@ -74,9 +54,6 @@ class LossHistory:
 
 class PeriodicPlotter:
   def __init__(self, sec, xlabel='', ylabel='', scale=None):
-    from IPython import display as ipythondisplay
-    import matplotlib.pyplot as plt
-    import time
 
     self.xlabel = xlabel
     self.ylabel = ylabel
