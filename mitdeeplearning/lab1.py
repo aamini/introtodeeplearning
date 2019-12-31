@@ -1,2 +1,2 @@
 def func():
-    print("hi")
+    print("test package")
