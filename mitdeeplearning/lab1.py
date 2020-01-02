@@ -2,6 +2,7 @@ import os
 import regex as re
 import subprocess
 import urllib
+import numpy as np
 
 from IPython.display import Audio
 
