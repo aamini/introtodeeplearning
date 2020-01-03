@@ -93,7 +93,7 @@ def get_test_faces():
     cwd = os.path.dirname(__file__)
     f = h5py.File(os.path.join(cwd, "data", "test_faces.h5py"), "r")
     def get(key):
-        return f[key][:,:,:,::-1]/255.
+        return f[key][:][:,:,:,::-1]/255.
     return get("LM"), get("LF"), get("DM"), get("DF")
 
 
