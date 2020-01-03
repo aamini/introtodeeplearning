@@ -92,7 +92,7 @@ class TrainingDatasetLoader(object):
 def get_test_faces():
     cwd = os.path.dirname(__file__)
     f = h5py.File(os.path.join(cwd, "data", "test_faces.h5py"), "r")
-    return f["LM"][:]/255., f["LF"][:]/255. f["DM"][:]/255., f["DF"][:]/255.
+    return f["LM"][:]/255., f["LF"][:]/255., f["DM"][:]/255., f["DF"][:]/255.
 
 
 class PPBFaceEvaluator:
