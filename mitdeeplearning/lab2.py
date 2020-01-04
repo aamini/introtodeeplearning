@@ -52,7 +52,7 @@ class TrainingDatasetLoader(object):
         print ("Loading data into memory...")
         sys.stdout.flush()
         self.images = self.cache['images'][:]
-        self.labels = self.cache['labels'][:]
+        self.labels = self.cache['labels'][:].astype(np.float32)
         self.image_dims = self.images.shape
         n_train_samples = self.image_dims[0]
 
