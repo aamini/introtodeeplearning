@@ -76,14 +76,14 @@ class TrainingDatasetLoader(object):
             selected_inds = np.concatenate((selected_pos_inds, selected_neg_inds))
 
         sorted_inds = np.sort(selected_inds)
-        train_img = self.images[sorted_inds,:,:,::-1]/255.
+        train_img = (self.images[sorted_inds,:,:,::-1]/255.).astype(np.float32)
         train_label = self.labels[sorted_inds,...]
         return (train_img, train_label, sorted_inds) if return_inds else (train_img, train_label)
 
     def get_n_most_prob_faces(self, prob, n):
         idx = np.argsort(prob)[::-1]
         most_prob_inds = self.pos_train_inds[idx[:10*n:10]]
-        return self.images[most_prob_inds,...]/255.
+        return (self.images[most_prob_inds,...]/255.).astype(np.float32)
 
     def get_all_train_faces(self):
         return self.images[ self.pos_train_inds ]
@@ -93,7 +93,7 @@ def get_test_faces():
     cwd = os.path.dirname(__file__)
     f = h5py.File(os.path.join(cwd, "data", "test_faces.h5py"), "r")
     def get(key):
-        return f[key][:][:,:,:,::-1]/255.
+        return (f[key][:][:,:,:,::-1]/255.).astype(np.float32)
     return get("LM"), get("LF"), get("DM"), get("DF")
 
 
