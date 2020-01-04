@@ -9,38 +9,28 @@ from string import Formatter
 
 
 
-#####################################
-def custom_progress_text(message):
-
-  message_ = message.replace('(', '{')
-  message_ = message_.replace(')', '}')
-
-  keys = [key[1] for key in Formatter().parse(message_)]
-
-  ids = {}
-  for key in keys:
-    if key is not None:
-      ids[key] = float('nan')
-
-  msg = progressbar.FormatCustomText(message, ids)
-  return msg
-
-def create_progress_bar(text=None):
-  if text is None:
-    text = progressbar.FormatCustomText('')
-  bar = progressbar.ProgressBar(widgets=[
-      progressbar.Percentage(),
-      progressbar.Bar(),
-      progressbar.AdaptiveETA(), '  ',
-      text,
-  ])
-  return bar
 
 def display_model(model):
   tf.keras.utils.plot_model(model,
              to_file='tmp.png',
              show_shapes=True)
   return ipythondisplay.Image('tmp.png')
+
+
+def plot_sample(x,y,vae):
+    plt.figure(figsize=(2,1))
+    plt.subplot(1, 2, 1)
+
+    idx = np.where(y.numpy()==1)[0][0]
+    plt.imshow(x[idx])
+    plt.grid(False)
+
+    plt.subplot(1, 2, 2)
+    _, _, _, recon = vae(x)
+    plt.imshow(recon[idx])
+    plt.grid(False)
+
+    plt.show()
 
 
 class LossHistory:
