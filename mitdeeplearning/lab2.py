@@ -6,6 +6,7 @@ import tensorflow as tf
 import time
 import h5py
 import sys
+import glob
 
 IM_SHAPE = (64, 64, 3)
 
@@ -91,10 +92,19 @@ class TrainingDatasetLoader(object):
 
 def get_test_faces():
     cwd = os.path.dirname(__file__)
-    f = h5py.File(os.path.join(cwd, "data", "test_faces.h5py"), "r")
-    def get(key):
-        return (f[key][:][:,:,:,::-1]/255.).astype(np.float32)
-    return get("LM"), get("LF"), get("DM"), get("DF")
+    images = {
+        "LF": [],
+        "LM": [],
+        "DF": [],
+        "DM": []
+    }
+    for key in images.keys():
+        files = glob.glob(os.path.join(cwd, "data", "faces", key, "*.png"))
+        for file in sorted(files):
+            image = cv2.resize(cv2.imread(file), (64,64))[:,:,::-1]/255.
+            images[key].append(image)
+
+    return images["LF"], images["LM"], images["DF"], images["DM"]
 
 
 class PPBFaceEvaluator:
