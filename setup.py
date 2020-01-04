@@ -37,7 +37,7 @@ setup(
     'Programming Language :: Python :: 3.6',
   ],
   package_data={
-      'mitdeeplearning': ['bin/*', 'data/*', 'data/faces/*'],
+      'mitdeeplearning': ['bin/*', 'data/*', 'data/faces/DF/*', 'data/faces/DM/*', 'data/faces/LF/*', 'data/faces/LM/*'],
    },
 
 )
