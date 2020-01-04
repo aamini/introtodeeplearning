@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import time
 import progressbar
+import numpy as np
 
 from IPython import display as ipythondisplay
 from string import Formatter
@@ -21,16 +22,18 @@ def plot_sample(x,y,vae):
     plt.figure(figsize=(2,1))
     plt.subplot(1, 2, 1)
 
-    idx = np.where(y.numpy()==1)[0][0]
+    idx = np.where(y==1)[0][0]
     plt.imshow(x[idx])
     plt.grid(False)
 
     plt.subplot(1, 2, 2)
     _, _, _, recon = vae(x)
+    recon = np.clip(recon, 0, 1)
     plt.imshow(recon[idx])
     plt.grid(False)
 
     plt.show()
+
 
 
 class LossHistory:
