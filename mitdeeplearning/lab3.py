@@ -2,6 +2,7 @@ import io
 import base64
 from IPython.display import HTML
 import gym
+import numpy as np
 
 def play_video(filename):
     encoded = base64.b64encode(io.open(filename, 'r+b').read())
