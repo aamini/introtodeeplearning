@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import time
-import progressbar
 import numpy as np
 
 from IPython import display as ipythondisplay
