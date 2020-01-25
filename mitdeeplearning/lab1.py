@@ -3,6 +3,7 @@ import regex as re
 import subprocess
 import urllib
 import numpy as np
+import tensorflow as tf
 
 from IPython.display import Audio
 
