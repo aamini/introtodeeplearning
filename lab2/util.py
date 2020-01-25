@@ -32,7 +32,7 @@ class TrainingDatasetLoader(object):
 
     def get_train_size(self):
         return self.train_inds.shape[0]
-    
+
     def get_train_steps_per_epoch(self, batch_size, factor=10):
         return self.get_train_size()//factor//batch_size
 
@@ -61,7 +61,11 @@ class TrainingDatasetLoader(object):
 
 class PPBFaceEvaluator:
     ''' Evaluate on the PPB dataset'''
+<<<<<<< HEAD
     def __init__(self, skip=5):
+=======
+    def __init__(self, skip=4):
+>>>>>>> master
 
         path_to_faces = tf.keras.utils.get_file('ppb', 'https://www.dropbox.com/s/l0lp6qxeplumouf/PPB.tar?dl=1', extract=True)
         self.ppb_root = os.path.join(os.path.split(path_to_faces)[0], 'PPB-2017')
@@ -103,7 +107,11 @@ class PPBFaceEvaluator:
 
         key = self.__get_key(gender, skin_color)
         num_faces = len(self.raw_images[key])
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> master
         import progressbar
         bar = progressbar.ProgressBar()
         for face_idx in bar(range(num_faces)):
