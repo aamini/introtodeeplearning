@@ -28,7 +28,7 @@ setup(
   author = 'Alexander Amini',                   # Type in your name
   author_email = 'introtodeeplearning-staff@mit.edu',      # Type in your E-Mail
   url = 'http://introtodeeplearning.com',   # Provide either the link to your github or to your website
-  download_url = 'https://github.com/aamini/introtodeeplearning_labs/archive/v0.5.5.tar.gz',    # I explain this later on
+  download_url = 'https://github.com/aamini/introtodeeplearning/archive/v0.5.5.tar.gz',    # I explain this later on
   keywords = ['deep learning', 'neural networks', 'tensorflow', 'introduction'],   # Keywords that define your package best
   install_requires=install_deps,
   classifiers=[
