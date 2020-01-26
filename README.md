@@ -24,7 +24,7 @@ We do this for you in each of the labs, but the package is also open source unde
 
 ## Lecture Videos
 
-[<img src="https://github.com/aamini/introtodeeplearning/blob/master/video-frame.jpg" width="500">](https://www.youtube.com/playlist?list=PLtBw6njQRU-rwp5__7C0oIVt26ZgjG9NI)
+[<img src="https://github.com/aamini/introtodeeplearning/blob/master/video-frame.jpg" width="500">](https://www.youtube.com/watch?v=5v1JnYv_yWs&list=PLtBw6njQRU-rwp5__7C0oIVt26ZgjG9NI&index=1)
 
 ## License
 All code in this repository is copyright 2020 [MIT 6.S191 Introduction to Deep Learning](http://introtodeeplearning.com). All Rights Reserved.
