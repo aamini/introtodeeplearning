@@ -1,4 +1,4 @@
-[![alt text](https://github.com/aamini/introtodeeplearning/blob/master/banner.png)](http://introtodeeplearning.com)
+[![banner](https://github.com/aamini/introtodeeplearning/blob/master/banner.png)](http://introtodeeplearning.com)
 
 This repository contains all of the code and software labs for [MIT 6.S191: Introduction to Deep Learning](http://introtodeeplearning.com)! All lecture slides and videos are available on the course website. 
 
@@ -21,6 +21,10 @@ This package contains convienence functions that we use throughout the course an
 `>>> import mitdeeplearning as mdl`
 
 We do this for you in each of the labs, but the package is also open source under the same license so you can also use it outside the class. 
+
+## Lecture Videos
+
+[<img src="https://github.com/aamini/introtodeeplearning/blob/master/video-frame.jpg" width="500">](https://www.youtube.com/playlist?list=PLtBw6njQRU-rwp5__7C0oIVt26ZgjG9NI)
 
 ## License
 All code in this repository is copyright 2020 [MIT 6.S191 Introduction to Deep Learning](http://introtodeeplearning.com). All Rights Reserved.
