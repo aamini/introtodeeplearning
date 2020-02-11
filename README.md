@@ -26,7 +26,7 @@ We do this for you in each of the labs, but the package is also open source unde
 
 ## Lecture Videos
 
-[<img src="assets/video_play.png" width="500">](https://www.youtube.com/watch?v=5v1JnYv_yWs&list=PLtBw6njQRU-rwp5__7C0oIVt26ZgjG9NI&index=1)
+[<img src="assets/video_play.png" width="500">](https://www.youtube.com/watch?v=njKP3FqW3Sk&list=PLtBw6njQRU-rwp5__7C0oIVt26ZgjG9NI&index=1)
 
 All lecture videos are available publicly online and linked above! Use and/or modification of lecture slides outside of 6.S191 must reference:
 
