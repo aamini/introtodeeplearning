@@ -17,7 +17,7 @@ def load_training_data():
     return songs
 
 def extract_song_snippet(text):
-    pattern = '\n\n(.*?)\n\n'
+    pattern = 'X:(.*?)\n\n'
     search_results = re.findall(pattern, text, overlapped=True, flags=re.DOTALL)
     songs = [song for song in search_results]
     print("Found {} songs in text".format(len(songs)))
