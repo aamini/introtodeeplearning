@@ -29,7 +29,7 @@ if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
-env = gym.make("Pong-v0", frameskip=5, difficulty=0)
+env = gym.make("Pong-v0", frameskip=5)
 env.seed(1)  # for reproducibility
 
 n_actions = env.action_space.n
@@ -44,26 +44,25 @@ n_actions = env.action_space.n
 #   observation: observation which is fed as input to the model
 # Returns:
 #   action: choice of agent action
-def choose_action(model, observations):
+def choose_action(model, observation, single=True):
+    if single: # create a batch dimension if only a single example was provided
+        observations = np.expand_dims(observation, axis=0)
+
     # add batch dimension to the observation
     # observation = np.expand_dims(observation, axis=0)
     '''TODO: feed the observations through the model to predict the log probabilities of each possible action.'''
-
     logits = model.predict(observations)  # TODO
     # logits = model.predict('''TODO''')
 
     # pass the log probabilities through a softmax to compute true probabilities
-    prob_weights = tf.nn.softmax(logits)
+    # prob_weights = tf.nn.softmax(logits)
     '''TODO: randomly sample from the prob_weights to pick an action.
   Hint: carefully consider the dimensionality of the input probabilities (vector) and the output action (scalar)'''
 
-    action = tf.random.categorical(logits, 1)[:,0].numpy()
+    action = tf.random.categorical(logits, num_samples=1)
+    action = action.numpy().flatten()
 
-    # action = np.random.choice(
-    #     n_actions, size=1, p=prob_weights.flatten())[0]  # TODO
-    # action = np.random.choice('''TODO''', size=1, p=''''TODO''')['''TODO''']
-
-    return action
+    return action[0] if single else action
 
 
 ### Reward function ###
@@ -97,6 +96,15 @@ class Memory:
         '''TODO: update the list of rewards with new reward'''
         self.rewards.append(new_reward)  # TODO
         # ['''TODO''']
+
+
+# Combine a list of Memory objects into a single Memory (e.g., for batching)
+def aggregate_memories(memories):
+    batch_memory = Memory()
+    for memory in memories:
+         for step in zip(memory.observations, memory.actions, memory.rewards):
+             batch_memory.add_to_memory(*step)
+    return batch_memory
 
 
 memory = Memory()
@@ -200,14 +208,6 @@ def discount_rewards(rewards, gamma=0.99):
     return normalize(discounted_rewards)
 
 
-def fix(img):
-    return cv2.resize(
-        cv2.dilate(img, np.ones((2, 2), np.uint8), iterations=1),
-        None,
-        fx=0.5,
-        fy=0.5)[:, :, np.newaxis]
-
-
 # env.reset()
 # for i in range(1000):
 #   observation, _,_,_ = env.step(0)
@@ -221,11 +221,10 @@ def fix(img):
 
 # Hyperparameters
 learning_rate = args.learning_rate
-MAX_ITERS = 10000  # increase the maximum number of episodes, since Pong is more complex!
+MAX_ITERS = 100  # increase the maximum number of episodes, since Pong is more complex!
 
 # Model and optimizer
 pong_model = create_pong_model()
-pong_model.build((None, 40, 40, 1))
 
 optimizer = tf.keras.optimizers.Adam(learning_rate)
 
@@ -238,49 +237,15 @@ batch_size = args.batch_size
 
 
 
+def parallelized_collect_rollout(batch_size, envs, model, choose_action):
 
+    assert len(envs) == batch_size, "Number of parallel environments must be equal to the batch size."
 
-
-# def run_episode(env, model):
-#     print("running episode")
-#     memory = Memory()
-#     observation = env.reset()
-#     previous_frame = fix(mdl.lab3.preprocess_pong(observation))
-#     done = False
-#     while not done:
-#         # Pre-process image
-#         current_frame = fix(mdl.lab3.preprocess_pong(observation))
-#         obs_change = current_frame - previous_frame  # TODO
-#
-#         # obs_change = # TODO
-#         tic = time.time()
-#         action = choose_action(model, obs_change)  # TODO
-#
-#         # action = # TODO
-#         # Take the chosen action
-#         tic = time.time()
-#         next_observation, reward, done, info = env.step(action)
-#
-#         memory.add_to_memory(obs_change, action, reward)  # TODO
-#
-#         observation = next_observation
-#         previous_frame = current_frame
-#     return memory
-
-
-envs = [copy.deepcopy(env) for _ in range(batch_size)]
-
-for i_episode in range(MAX_ITERS):
-
-    tic = time.time()
     memories = [Memory() for _ in range(batch_size)]
     next_observations = [single_env.reset() for single_env in envs]
     previous_frames = [obs for obs in next_observations]
     done = [False] * batch_size
-    actions = [0] * batch_size
     rewards = [0] * batch_size
-    print("reiniting", time.time()-tic)
-
 
     tic = time.time()
     while True:
@@ -289,7 +254,7 @@ for i_episode in range(MAX_ITERS):
         diff_frames = [mdl.lab3.pong_change(prev, curr) for (prev, curr) in zip(previous_frames, current_frames)]
 
         diff_frames_not_done = [diff_frames[b] for b in range(batch_size) if not done[b]]
-        actions_not_done = choose_action(pong_model, np.array(diff_frames_not_done))
+        actions_not_done = choose_action(model, np.array(diff_frames_not_done), single=False)
 
         actions = [None] * batch_size
         ind_not_done = 0
@@ -305,9 +270,55 @@ for i_episode in range(MAX_ITERS):
             previous_frames[b] = current_frames[b]
             memories[b].add_to_memory(diff_frames[b], actions[b], rewards[b])
 
-
         if all(done):
             break
+
+    return memories
+
+
+
+def collect_rollout(batch_size, env, model, choose_action):
+
+    memories = []
+
+    for b in range(batch_size):
+        memory = Memory()
+        next_observation = env.reset()
+        previous_frame = next_observation
+        done = False
+
+        while not done:
+            current_frame = next_observation
+            diff_frame = mdl.lab3.pong_change(previous_frame, current_frame)
+
+            action = choose_action(model, diff_frame)
+
+            next_observation, reward, done, info = env.step(action)
+
+            previous_frame = current_frame
+            memory.add_to_memory(diff_frame, action, reward)
+
+        memories.append(memory)
+
+    return memories
+
+
+mdl.lab3.save_video_of_memory(memory[0])
+collect_rollout(batch_size, env, model, choose_action)
+
+
+
+
+envs = [copy.deepcopy(env) for _ in range(batch_size)]
+
+for i_episode in range(MAX_ITERS):
+
+
+    tic = time.time()
+    memories = collect_rollout(batch_size, env, pong_model, choose_action)
+    # memories = parallelized_collect_rollout(batch_size, envs, pong_model, choose_action)
+    batch_memory = aggregate_memories(memories)
+    print(time.time()-tic)
 
 
     # def parallel_episode(i):
@@ -323,19 +334,13 @@ for i_episode in range(MAX_ITERS):
     #     memories = pool.map(parallel_episode, models)#range(batch_size))
     # print(time.time()-tic)
 
-    print(time.time()-tic)
 
-    batch_memory = Memory()
-    for memory in memories:
-         for step in zip(memory.observations, memory.actions, memory.rewards):
-             batch_memory.add_to_memory(*step)
-
+    # batch_memory = Memory()
+    # for memory in memories:
+    #      for step in zip(memory.observations, memory.actions, memory.rewards):
+    #          batch_memory.add_to_memory(*step)
 
 
-    def play(memory):
-        for o in memory.observations:
-            cv2.imshow('hi', cv2.resize(o, (500,500)))
-            cv2.waitKey(20)
 
 
 
