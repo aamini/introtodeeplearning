@@ -44,21 +44,17 @@ def pong_change(prev, curr):
 
 
 
-def save_video_of_model(model, env_name, obs_diff=False, pp_fn=None):
+def save_video_of_model(model, env_name, suffix=""):
     import skvideo.io
     from pyvirtualdisplay import Display
     display = Display(visible=0, size=(400, 300))
     display.start()
 
-    if pp_fn is None:
-        pp_fn = lambda x: x
-
     env = gym.make(env_name)
     obs = env.reset()
-    obs = pp_fn(obs)
     prev_obs = obs
 
-    filename = env_name + ".mp4"
+    filename = env_name + suffix + ".mp4"
     output_video = skvideo.io.FFmpegWriter(filename)
 
     counter = 0
@@ -67,15 +63,17 @@ def save_video_of_model(model, env_name, obs_diff=False, pp_fn=None):
         frame = env.render(mode='rgb_array')
         output_video.writeFrame(frame)
 
-        if obs_diff:
-            input_obs = obs - prev_obs
-        else:
+        if "Cartpole" in env_name:
             input_obs = obs
+        elif "Pong" in env_name:
+            input_obs = pong_change(prev_obs, obs)
+        else:
+            raise ValueError(f"Unknown env for saving: {env_name}")
+
         action = model(np.expand_dims(input_obs, 0)).numpy().argmax()
 
         prev_obs = obs
         obs, reward, done, info = env.step(action)
-        obs = pp_fn(obs)
         counter += 1
 
     output_video.close()

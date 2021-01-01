@@ -369,8 +369,5 @@ for i_episode in range(MAX_ITERS):
         actions=np.array(batch_memory.actions),
         discounted_rewards=discount_rewards(batch_memory.rewards))
 
-    batch_memory.clear()
-    # break
-
-        # observation = next_observation
-        # previous_frame = current_frame
+    if i_episode % 500 == 0:
+        mdl.save_video_of_model(pong_model, "Pong-v0", suffix=str(i_episode))
