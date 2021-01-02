@@ -14,17 +14,9 @@ def play_video(filename):
 
     return embedded
 
+
 def preprocess_pong(image):
     I = image[35:195] # Crop
-    I = I[::2, ::2, 0] # Downsample width and height by a factor of 2
-    I[I == 144] = 0 # Remove background type 1
-    I[I == 109] = 0 # Remove background type 2
-    I[I != 0] = 1 # Set remaining elements (paddles, ball, etc.) to 1
-    return I.astype(np.float).reshape(80, 80, 1)
-
-def new_preprocess_pong(image):
-    I = image[35:195] # Crop
-    # I = np.mean(I, axis=-1, keepdim=True)
     I = I[::2, ::2, 0] # Downsample width and height by a factor of 2
     I[I == 144] = 0 # Remove background type 1
     I[I == 109] = 0 # Remove background type 2
@@ -41,6 +33,7 @@ def pong_change(prev, curr):
     I = (I - I.min()) / (I.max() - I.min() + 1e-10)
     return I
 
+
 class Memory:
   def __init__(self): 
       self.clear()
@@ -54,15 +47,10 @@ class Memory:
   # Add observations, actions, rewards to memory
   def add_to_memory(self, new_observation, new_action, new_reward): 
       self.observations.append(new_observation)
-      '''TODO: update the list of actions with new action'''
-      self.actions.append(new_action) # TODO
-      # ['''TODO''']
-      '''TODO: update the list of rewards with new reward'''
-      self.rewards.append(new_reward) # TODO
-      # ['''TODO''']
+      self.actions.append(new_action)
+      self.rewards.append(new_reward)
 
-# Helper function to combine a list of Memory objects into a single Memory.
-#     This will be very useful for batching.
+    
 def aggregate_memories(memories):
   batch_memory = Memory()
   
@@ -71,6 +59,7 @@ def aggregate_memories(memories):
       batch_memory.add_to_memory(*step)
   
   return batch_memory
+
 
 def parallelized_collect_rollout(batch_size, envs, model, choose_action):
 
