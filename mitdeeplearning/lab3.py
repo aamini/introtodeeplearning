@@ -27,8 +27,8 @@ def preprocess_pong(image):
 
 
 def pong_change(prev, curr):
-    prev = new_preprocess_pong(prev)
-    curr = new_preprocess_pong(curr)
+    prev = preprocess_pong(prev)
+    curr = preprocess_pong(curr)
     I = prev - curr
     I = (I - I.min()) / (I.max() - I.min() + 1e-10)
     return I
