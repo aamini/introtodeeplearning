@@ -63,7 +63,7 @@ def save_video_of_model(model, env_name, suffix=""):
         frame = env.render(mode='rgb_array')
         output_video.writeFrame(frame)
 
-        if "Cartpole" in env_name:
+        if "CartPole" in env_name:
             input_obs = obs
         elif "Pong" in env_name:
             input_obs = pong_change(prev_obs, obs)
