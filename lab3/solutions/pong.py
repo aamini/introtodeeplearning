@@ -45,8 +45,8 @@ n_actions = env.action_space.n
 # Returns:
 #   action: choice of agent action
 def choose_action(model, observation, single=True):
-    if single: # create a batch dimension if only a single example was provided
-        observations = np.expand_dims(observation, axis=0)
+    # create a batch dimension if only a single example was provided
+    observations = np.expand_dims(observation, axis=0) if single else observation
 
     # add batch dimension to the observation
     # observation = np.expand_dims(observation, axis=0)
@@ -303,8 +303,8 @@ def collect_rollout(batch_size, env, model, choose_action):
     return memories
 
 
-mdl.lab3.save_video_of_memory(memory[0])
-collect_rollout(batch_size, env, model, choose_action)
+# mdl.lab3.save_video_of_memory(memory[0])
+# collect_rollout(batch_size, env, model, choose_action)
 
 
 
@@ -315,8 +315,8 @@ for i_episode in range(MAX_ITERS):
 
 
     tic = time.time()
-    memories = collect_rollout(batch_size, env, pong_model, choose_action)
-    # memories = parallelized_collect_rollout(batch_size, envs, pong_model, choose_action)
+    # memories = collect_rollout(batch_size, env, pong_model, choose_action)
+    memories = parallelized_collect_rollout(batch_size, envs, pong_model, choose_action)
     batch_memory = aggregate_memories(memories)
     print(time.time()-tic)
 
@@ -370,4 +370,4 @@ for i_episode in range(MAX_ITERS):
         discounted_rewards=discount_rewards(batch_memory.rewards))
 
     if i_episode % 500 == 0:
-        mdl.save_video_of_model(pong_model, "Pong-v0", suffix=str(i_episode))
+        mdl.lab3.save_video_of_model(pong_model, "Pong-v0", suffix=str(i_episode))
