@@ -41,6 +41,37 @@ def pong_change(prev, curr):
     I = (I - I.min()) / (I.max() - I.min() + 1e-10)
     return I
 
+class Memory:
+  def __init__(self): 
+      self.clear()
+
+  # Resets/restarts the memory buffer
+  def clear(self): 
+      self.observations = []
+      self.actions = []
+      self.rewards = []
+
+  # Add observations, actions, rewards to memory
+  def add_to_memory(self, new_observation, new_action, new_reward): 
+      self.observations.append(new_observation)
+      '''TODO: update the list of actions with new action'''
+      self.actions.append(new_action) # TODO
+      # ['''TODO''']
+      '''TODO: update the list of rewards with new reward'''
+      self.rewards.append(new_reward) # TODO
+      # ['''TODO''']
+
+# Helper function to combine a list of Memory objects into a single Memory.
+#     This will be very useful for batching.
+def aggregate_memories(memories):
+  batch_memory = Memory()
+  
+  for memory in memories:
+    for step in zip(memory.observations, memory.actions, memory.rewards):
+      batch_memory.add_to_memory(*step)
+  
+  return batch_memory
+
 def parallelized_collect_rollout(batch_size, envs, model, choose_action):
 
     assert len(envs) == batch_size, "Number of parallel environments must be equal to the batch size."
