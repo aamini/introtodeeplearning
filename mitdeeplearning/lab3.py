@@ -81,13 +81,12 @@ def save_video_of_model(model, env_name, suffix=""):
     return filename
 
 
-def save_video_of_memory(memory):
+def save_video_of_memory(memory, filename):
     import skvideo.io
     from pyvirtualdisplay import Display
     display = Display(visible=0, size=(400, 300))
     display.start()
 
-    filename = env_name + ".mp4"
     output_video = skvideo.io.FFmpegWriter(filename)
 
     for observation in memory.observations:
