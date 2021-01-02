@@ -93,5 +93,4 @@ def save_video_of_memory(memory, filename):
         output_video.writeFrame(observation)
 
     output_video.close()
-    print("Successfully saved {} frames into {}!".format(counter, filename))
     return filename
