@@ -41,7 +41,43 @@ def pong_change(prev, curr):
     I = (I - I.min()) / (I.max() - I.min() + 1e-10)
     return I
 
+def parallelized_collect_rollout(batch_size, envs, model, choose_action):
 
+    assert len(envs) == batch_size, "Number of parallel environments must be equal to the batch size."
+
+    memories = [Memory() for _ in range(batch_size)]
+    next_observations = [single_env.reset() for single_env in envs]
+    previous_frames = [obs for obs in next_observations]
+    done = [False] * batch_size
+    rewards = [0] * batch_size
+
+    tic = time.time()
+    while True:
+
+        current_frames = [obs for obs in next_observations]
+        diff_frames = [pong_change(prev, curr) for (prev, curr) in zip(previous_frames, current_frames)]
+
+        diff_frames_not_done = [diff_frames[b] for b in range(batch_size) if not done[b]]
+        actions_not_done = choose_action(model, np.array(diff_frames_not_done), single=False)
+
+        actions = [None] * batch_size
+        ind_not_done = 0
+        for b in range(batch_size):
+            if not done[b]:
+                actions[b] = actions_not_done[ind_not_done]
+                ind_not_done += 1
+
+        for b in range(batch_size):
+            if done[b]:
+                continue
+            next_observations[b], rewards[b], done[b], info = envs[b].step(actions[b])
+            previous_frames[b] = current_frames[b]
+            memories[b].add_to_memory(diff_frames[b], actions[b], rewards[b])
+
+        if all(done):
+            break
+
+    return memories
 
 
 def save_video_of_model(model, env_name, suffix=""):
