@@ -81,16 +81,13 @@ def save_video_of_model(model, env_name, suffix=""):
     return filename
 
 
-def save_video_of_memory(memory, filename):
+def save_video_of_memory(memory, filename, size=(512,512)):
     import skvideo.io
-    from pyvirtualdisplay import Display
-    display = Display(visible=0, size=(400, 300))
-    display.start()
 
     output_video = skvideo.io.FFmpegWriter(filename)
 
     for observation in memory.observations:
-        output_video.writeFrame(observation)
-
+        output_video.writeFrame(cv2.resize(255*observation, size))
+        
     output_video.close()
     return filename
