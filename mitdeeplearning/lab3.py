@@ -82,7 +82,6 @@ def parallelized_collect_rollout(batch_size, envs, model, choose_action):
     done = [False] * batch_size
     rewards = [0] * batch_size
 
-    tic = time.time()
     while True:
 
         current_frames = [obs for obs in next_observations]
