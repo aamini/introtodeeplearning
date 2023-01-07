@@ -1,149 +1,147 @@
-import io
-import base64
-from IPython.display import HTML
-import gym
-import numpy as np
 import cv2
+import os
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+import time
+import h5py
+import sys
+import glob
 
-def play_video(filename, width=None):
-    encoded = base64.b64encode(io.open(filename, 'r+b').read())
-    video_width = 'width="' + str(width) + '"' if width is not None else ''
-    embedded = HTML(data='''
-        <video controls {0}>
-            <source src="data:video/mp4;base64,{1}" type="video/mp4" />
-        </video>'''.format(video_width, encoded.decode('ascii')))
-
-    return embedded
-
-
-def preprocess_pong(image):
-    I = image[35:195] # Crop
-    I = I[::2, ::2, 0] # Downsample width and height by a factor of 2
-    I[I == 144] = 0 # Remove background type 1
-    I[I == 109] = 0 # Remove background type 2
-    I[I != 0] = 1 # Set remaining elements (paddles, ball, etc.) to 1
-    I = cv2.dilate(I, np.ones((3, 3), np.uint8), iterations=1)
-    I = I[::2, ::2, np.newaxis]
-    return I.astype(np.float)
+IM_SHAPE = (64, 64, 3)
 
 
-def pong_change(prev, curr):
-    prev = preprocess_pong(prev)
-    curr = preprocess_pong(curr)
-    I = prev - curr
-    # I = (I - I.min()) / (I.max() - I.min() + 1e-10)
-    return I
+def plot_image_prediction(i, predictions_array, true_label, img):
+    predictions_array, true_label, img = predictions_array[i], true_label[i], img[i]
+    plt.grid(False)
+    plt.xticks([])
+    plt.yticks([])
+
+    plt.imshow(np.squeeze(img), cmap=plt.cm.binary)
+
+    predicted_label = np.argmax(predictions_array)
+    if predicted_label == true_label:
+        color = "blue"
+    else:
+        color = "red"
+
+    plt.xlabel(
+        "{} {:2.0f}% ({})".format(
+            predicted_label, 100 * np.max(predictions_array), true_label
+        ),
+        color=color,
+    )
 
 
-class Memory:
-  def __init__(self): 
-      self.clear()
+def plot_value_prediction(i, predictions_array, true_label):
+    predictions_array, true_label = predictions_array[i], true_label[i]
+    plt.grid(False)
+    plt.xticks([])
+    plt.yticks([])
+    thisplot = plt.bar(range(10), predictions_array, color="#777777")
+    plt.ylim([0, 1])
+    predicted_label = np.argmax(predictions_array)
 
-  # Resets/restarts the memory buffer
-  def clear(self): 
-      self.observations = []
-      self.actions = []
-      self.rewards = []
-
-  # Add observations, actions, rewards to memory
-  def add_to_memory(self, new_observation, new_action, new_reward): 
-      self.observations.append(new_observation)
-      self.actions.append(new_action)
-      self.rewards.append(new_reward)
-
-    
-def aggregate_memories(memories):
-  batch_memory = Memory()
-  
-  for memory in memories:
-    for step in zip(memory.observations, memory.actions, memory.rewards):
-      batch_memory.add_to_memory(*step)
-  
-  return batch_memory
+    thisplot[predicted_label].set_color("red")
+    thisplot[true_label].set_color("blue")
 
 
-def parallelized_collect_rollout(batch_size, envs, model, choose_action):
+class DatasetLoader(tf.keras.utils.Sequence):
+    def __init__(self, data_path, batch_size, training=True):
 
-    assert len(envs) == batch_size, "Number of parallel environments must be equal to the batch size."
+        print("Opening {}".format(data_path))
+        sys.stdout.flush()
 
-    memories = [Memory() for _ in range(batch_size)]
-    next_observations = [single_env.reset() for single_env in envs]
-    previous_frames = [obs for obs in next_observations]
-    done = [False] * batch_size
-    rewards = [0] * batch_size
+        self.cache = h5py.File(data_path, "r")
 
-    while True:
+        print("Loading data into memory...")
+        sys.stdout.flush()
+        self.images = self.cache["images"][:]
+        self.labels = self.cache["labels"][:].astype(np.float32)
+        self.image_dims = self.images.shape
 
-        current_frames = [obs for obs in next_observations]
-        diff_frames = [pong_change(prev, curr) for (prev, curr) in zip(previous_frames, current_frames)]
-
-        diff_frames_not_done = [diff_frames[b] for b in range(batch_size) if not done[b]]
-        actions_not_done = choose_action(model, np.array(diff_frames_not_done), single=False)
-
-        actions = [None] * batch_size
-        ind_not_done = 0
-        for b in range(batch_size):
-            if not done[b]:
-                actions[b] = actions_not_done[ind_not_done]
-                ind_not_done += 1
-
-        for b in range(batch_size):
-            if done[b]:
-                continue
-            next_observations[b], rewards[b], done[b], info = envs[b].step(actions[b])
-            previous_frames[b] = current_frames[b]
-            memories[b].add_to_memory(diff_frames[b], actions[b], rewards[b])
-
-        if all(done):
-            break
-
-    return memories
-
-
-def save_video_of_model(model, env_name, suffix=""):
-    import skvideo.io
-    from pyvirtualdisplay import Display
-    display = Display(visible=0, size=(400, 300))
-    display.start()
-
-    env = gym.make(env_name)
-    obs = env.reset()
-    prev_obs = obs
-
-    filename = env_name + suffix + ".mp4"
-    output_video = skvideo.io.FFmpegWriter(filename)
-
-    counter = 0
-    done = False
-    while not done:
-        frame = env.render(mode='rgb_array')
-        output_video.writeFrame(frame)
-
-        if "CartPole" in env_name:
-            input_obs = obs
-        elif "Pong" in env_name:
-            input_obs = pong_change(prev_obs, obs)
+        train_inds = np.arange(len(self.images))
+        pos_train_inds = train_inds[self.labels[train_inds, 0] == 1.0]
+        neg_train_inds = train_inds[self.labels[train_inds, 0] != 1.0]
+        if training:
+            self.pos_train_inds = pos_train_inds[: int(0.7 * len(pos_train_inds))]
+            self.neg_train_inds = neg_train_inds[: int(0.7 * len(neg_train_inds))]
         else:
-            raise ValueError(f"Unknown env for saving: {env_name}")
+            self.pos_train_inds = pos_train_inds[-1 * int(0.3 * len(pos_train_inds)) :]
+            self.neg_train_inds = neg_train_inds[-1 * int(0.3 * len(neg_train_inds)) :]
 
-        action = model(np.expand_dims(input_obs, 0)).numpy().argmax()
+        np.random.shuffle(self.pos_train_inds)
+        np.random.shuffle(self.neg_train_inds)
 
-        prev_obs = obs
-        obs, reward, done, info = env.step(action)
-        counter += 1
+        self.train_inds = np.concatenate((self.pos_train_inds, self.neg_train_inds))
+        self.batch_size = batch_size
 
-    output_video.close()
-    print("Successfully saved {} frames into {}!".format(counter, filename))
-    return filename
+    def get_train_size(self):
+        return self.pos_train_inds.shape[0] + self.neg_train_inds.shape[0]
+
+    def __len__(self):
+        return int(np.floor(self.get_train_size() / self.batch_size))
+
+    def __getitem__(self, index):
+        selected_pos_inds = np.random.choice(
+            self.pos_train_inds, size=self.batch_size // 2, replace=False
+        )
+        selected_neg_inds = np.random.choice(
+            self.neg_train_inds, size=self.batch_size // 2, replace=False
+        )
+        selected_inds = np.concatenate((selected_pos_inds, selected_neg_inds))
+
+        sorted_inds = np.sort(selected_inds)
+        train_img = (self.images[sorted_inds] / 255.0).astype(np.float32)
+        train_label = self.labels[sorted_inds, ...]
+        inds = np.random.permutation(np.arange(len(train_img)))
+        return np.array(train_img[inds]), np.array(train_label[inds])
+
+    def get_n_most_prob_faces(self, prob, n):
+        idx = np.argsort(prob)[::-1]
+        most_prob_inds = self.pos_train_inds[idx[: 10 * n : 10]]
+        return (self.images[most_prob_inds, ...] / 255.0).astype(np.float32)
+
+    def get_all_faces(self):
+        return (self.images[self.pos_train_inds] / 255.0).astype(np.float32)
+
+    def return_sample_batch(self):
+        return self.__getitem__(0)
 
 
-def save_video_of_memory(memory, filename, size=(512,512)):
-    import skvideo.io
+def get_test_faces():
+    cwd = os.path.dirname(__file__)
+    images = {"LF": [], "LM": [], "DF": [], "DM": []}
+    for key in images.keys():
+        files = glob.glob(os.path.join(cwd, "data", "faces", key, "*.png"))
+        for file in sorted(files):
+            image = cv2.resize(cv2.imread(file), (64, 64))[:, :, ::-1] / 255.0
+            images[key].append(image)
 
-    output_video = skvideo.io.FFmpegWriter(filename)
+    return images["LF"], images["LM"], images["DF"], images["DM"]
 
-    for observation in memory.observations:
-        output_video.writeFrame(cv2.resize(255*observation, size))
-        
-    output_video.close()
-    return filename
+
+def plot_k(imgs):
+    fig = plt.figure()
+    fig.subplots_adjust(hspace=0.6)
+    num_images = len(imgs)
+    for img in range(num_images):
+        ax = fig.add_subplot(int(num_images / 5), 5, img + 1)
+        ax.xaxis.set_visible(False)
+        ax.yaxis.set_visible(False)
+        img_to_show = imgs[img]
+        ax.imshow(img_to_show, interpolation="nearest")
+    plt.subplots_adjust(wspace=0.20, hspace=0.20)
+    plt.show()
+    plt.clf()
+
+
+def plot_percentile(imgs):
+    fig = plt.figure()
+    fig, axs = plt.subplots(1, len(imgs), figsize=(11, 8))
+    for img in range(len(imgs)):
+        ax = axs[img]
+        ax.xaxis.set_visible(False)
+        ax.yaxis.set_visible(False)
+        img_to_show = imgs[img]
+        ax.imshow(img_to_show, interpolation="nearest")
