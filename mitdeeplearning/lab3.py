@@ -75,6 +75,7 @@ class DatasetLoader(tf.keras.utils.Sequence):
 
         self.train_inds = np.concatenate((self.pos_train_inds, self.neg_train_inds))
         self.batch_size = batch_size
+        self.p_pos = np.ones(self.pos_train_inds.shape)/len(self.pos_train_inds)
 
     def get_train_size(self):
         return self.pos_train_inds.shape[0] + self.neg_train_inds.shape[0]
@@ -84,7 +85,7 @@ class DatasetLoader(tf.keras.utils.Sequence):
 
     def __getitem__(self, index):
         selected_pos_inds = np.random.choice(
-            self.pos_train_inds, size=self.batch_size // 2, replace=False
+            self.pos_train_inds, size=self.batch_size // 2, replace=False, p=self.p_pos
         )
         selected_neg_inds = np.random.choice(
             self.neg_train_inds, size=self.batch_size // 2, replace=False
@@ -94,8 +95,7 @@ class DatasetLoader(tf.keras.utils.Sequence):
         sorted_inds = np.sort(selected_inds)
         train_img = (self.images[sorted_inds] / 255.0).astype(np.float32)
         train_label = self.labels[sorted_inds, ...]
-        inds = np.random.permutation(np.arange(len(train_img)))
-        return np.array(train_img[inds]), np.array(train_label[inds])
+        return np.array(train_img), np.array(train_label)
 
     def get_n_most_prob_faces(self, prob, n):
         idx = np.argsort(prob)[::-1]
@@ -121,7 +121,7 @@ def get_test_faces():
     return images["LF"], images["LM"], images["DF"], images["DM"]
 
 
-def plot_k(imgs):
+def plot_k(imgs, fname=None):
     fig = plt.figure()
     fig.subplots_adjust(hspace=0.6)
     num_images = len(imgs)
@@ -133,10 +133,12 @@ def plot_k(imgs):
         ax.imshow(img_to_show, interpolation="nearest")
     plt.subplots_adjust(wspace=0.20, hspace=0.20)
     plt.show()
+    if fname:
+        plt.savefig(fname)
     plt.clf()
 
 
-def plot_percentile(imgs):
+def plot_percentile(imgs, fname=None):
     fig = plt.figure()
     fig, axs = plt.subplots(1, len(imgs), figsize=(11, 8))
     for img in range(len(imgs)):
@@ -145,3 +147,26 @@ def plot_percentile(imgs):
         ax.yaxis.set_visible(False)
         img_to_show = imgs[img]
         ax.imshow(img_to_show, interpolation="nearest")
+    if fname:
+        plt.savefig(fname)
+
+def plot_accuracy_vs_risk(sorted_images, sorted_uncertainty, sorted_preds, plot_title):
+    num_percentile_intervals = 10
+    num_samples = len(sorted_images) // num_percentile_intervals
+    all_imgs = []
+    all_unc = []
+    all_acc = []
+    for percentile in range(num_percentile_intervals):
+        cur_imgs = sorted_images[percentile * num_samples : (percentile + 1) * num_samples]
+        cur_unc = sorted_uncertainty[percentile * num_samples : (percentile + 1) * num_samples]
+        cur_predictions = tf.nn.sigmoid(sorted_preds[percentile * num_samples : (percentile + 1) * num_samples])
+        avged_imgs = tf.reduce_mean(cur_imgs, axis=0)
+        all_imgs.append(avged_imgs)
+        all_unc.append(tf.reduce_mean(cur_unc))
+        all_acc.append((np.ones((num_samples)) == np.rint(cur_predictions)).mean())
+
+    plt.plot(np.arange(num_percentile_intervals) * 10, all_acc)
+    plt.title(plot_title)
+    plt.show()
+    plt.clf()
+    return all_imgs
