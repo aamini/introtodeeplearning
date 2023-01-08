@@ -64,18 +64,18 @@ class DatasetLoader(tf.keras.utils.Sequence):
         pos_train_inds = train_inds[self.labels[train_inds, 0] == 1.0]
         neg_train_inds = train_inds[self.labels[train_inds, 0] != 1.0]
         if training:
-            self.pos_train_inds = pos_train_inds[: int(0.7 * len(pos_train_inds))]
-            self.neg_train_inds = neg_train_inds[: int(0.7 * len(neg_train_inds))]
+            self.pos_train_inds = pos_train_inds[: int(0.8 * len(pos_train_inds))]
+            self.neg_train_inds = neg_train_inds[: int(0.8 * len(neg_train_inds))]
         else:
-            self.pos_train_inds = pos_train_inds[-1 * int(0.3 * len(pos_train_inds)) :]
-            self.neg_train_inds = neg_train_inds[-1 * int(0.3 * len(neg_train_inds)) :]
+            self.pos_train_inds = pos_train_inds[-1 * int(0.2 * len(pos_train_inds)) :]
+            self.neg_train_inds = neg_train_inds[-1 * int(0.2 * len(neg_train_inds)) :]
 
         np.random.shuffle(self.pos_train_inds)
         np.random.shuffle(self.neg_train_inds)
 
         self.train_inds = np.concatenate((self.pos_train_inds, self.neg_train_inds))
         self.batch_size = batch_size
-        self.p_pos = np.ones(self.pos_train_inds.shape)/len(self.pos_train_inds)
+        self.p_pos = np.ones(self.pos_train_inds.shape) / len(self.pos_train_inds)
 
     def get_train_size(self):
         return self.pos_train_inds.shape[0] + self.neg_train_inds.shape[0]
@@ -150,6 +150,7 @@ def plot_percentile(imgs, fname=None):
     if fname:
         plt.savefig(fname)
 
+
 def plot_accuracy_vs_risk(sorted_images, sorted_uncertainty, sorted_preds, plot_title):
     num_percentile_intervals = 10
     num_samples = len(sorted_images) // num_percentile_intervals
@@ -157,9 +158,15 @@ def plot_accuracy_vs_risk(sorted_images, sorted_uncertainty, sorted_preds, plot_
     all_unc = []
     all_acc = []
     for percentile in range(num_percentile_intervals):
-        cur_imgs = sorted_images[percentile * num_samples : (percentile + 1) * num_samples]
-        cur_unc = sorted_uncertainty[percentile * num_samples : (percentile + 1) * num_samples]
-        cur_predictions = tf.nn.sigmoid(sorted_preds[percentile * num_samples : (percentile + 1) * num_samples])
+        cur_imgs = sorted_images[
+            percentile * num_samples : (percentile + 1) * num_samples
+        ]
+        cur_unc = sorted_uncertainty[
+            percentile * num_samples : (percentile + 1) * num_samples
+        ]
+        cur_predictions = tf.nn.sigmoid(
+            sorted_preds[percentile * num_samples : (percentile + 1) * num_samples]
+        )
         avged_imgs = tf.reduce_mean(cur_imgs, axis=0)
         all_imgs.append(avged_imgs)
         all_unc.append(tf.reduce_mean(cur_unc))
