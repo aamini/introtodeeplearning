@@ -74,3 +74,19 @@ class PeriodicPlotter:
       ipythondisplay.display(plt.gcf())
 
       self.tic = time.time()
+
+
+def create_grid_of_images(xs, size=(5,5)):
+    """ Combine a list of images into a single image grid by stacking them into an array of shape `size` """
+
+    grid = []
+    counter = 0
+    for i in range(size[0]):
+        row = []
+        for j in range(size[1]):
+          row.append(xs[counter])
+          counter += 1
+        row = np.hstack(row)
+        grid.append(row)
+    grid = np.vstack(grid)
+    return grid
