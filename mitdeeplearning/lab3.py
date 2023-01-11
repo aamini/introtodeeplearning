@@ -76,6 +76,7 @@ class DatasetLoader(tf.keras.utils.Sequence):
         self.train_inds = np.concatenate((self.pos_train_inds, self.neg_train_inds))
         self.batch_size = batch_size
         self.p_pos = np.ones(self.pos_train_inds.shape) / len(self.pos_train_inds)
+        self.p_neg = np.ones(self.neg_train_inds.shape) / len(self.neg_train_inds)
 
     def get_train_size(self):
         return self.pos_train_inds.shape[0] + self.neg_train_inds.shape[0]
@@ -88,7 +89,7 @@ class DatasetLoader(tf.keras.utils.Sequence):
             self.pos_train_inds, size=self.batch_size // 2, replace=False, p=self.p_pos
         )
         selected_neg_inds = np.random.choice(
-            self.neg_train_inds, size=self.batch_size // 2, replace=False
+            self.neg_train_inds, size=self.batch_size // 2, replace=False, p = self.p_neg
         )
         selected_inds = np.concatenate((selected_pos_inds, selected_neg_inds))
 
