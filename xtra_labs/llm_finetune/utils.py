@@ -66,6 +66,7 @@ def make_spider_plot(data):
     """
     colors = ['#1aaf6c', '#429bf4', '#d42cea']
     i = 0
+    fig, ax = plt.subplots(figsize=(8,6), subplot_kw=dict(polar=True))
     for k,v in data.items():
         labels = v.index.tolist()
         values = v.values.tolist()
@@ -74,8 +75,6 @@ def make_spider_plot(data):
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         angles += angles[:1]
         values += values[:1]
-
-        fig, ax = plt.subplots(figsize=(8,6), subplot_kw=dict(polar=True))
         
         ax.plot(angles, values, color=colors[i], linewidth=1, label=k)
         ax.fill(angles, values, color=colors[i], alpha=0.25)

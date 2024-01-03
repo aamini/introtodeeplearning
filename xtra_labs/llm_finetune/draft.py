@@ -1,11 +1,16 @@
 """
 Drafting lab flow in script format using PyTorch
 """
-
+from datasets import load_dataset
+import math
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import transformers
+from trl import SFTTrainer
 
 from utils import run_benchmark, make_spider_plot
 
@@ -63,14 +68,14 @@ category_accs_1300m, avg_acc_1300m = run_benchmark(model, tokenizer, dataset)
 # Benchmark smaller model
 model_name_350m = "facebook/opt-350m" 
 model_350m = transformers.AutoModelForCausalLM.from_pretrained(model_name_350m, device_map="auto")
-tokenizer_350m = transformers.AutoTokenizer.from_pretrained(model_350m)
+tokenizer_350m = transformers.AutoTokenizer.from_pretrained(model_name_350m)
 
 category_accs_350m, avg_acc_350m = run_benchmark(model_350m, tokenizer_350m, dataset)
 
 # Benchmark larger model
 model_name_2700m = "facebook/opt-2.7b" 
 model_2700m = transformers.AutoModelForCausalLM.from_pretrained(model_name_2700m, device_map="auto")
-tokenizer_2700m = transformers.AutoTokenizer.from_pretrained(model_2700m)
+tokenizer_2700m = transformers.AutoTokenizer.from_pretrained(model_name_2700m)
 
 category_accs_2700m, avg_acc_2700m = run_benchmark(model_2700m, tokenizer_2700m, dataset)
 
@@ -81,16 +86,98 @@ make_spider_plot(benchmark_data)
 
 # Part 2
 
+# inspect current model
+print(model)
+
 # new LoRA linear layer class
+class LoRALinear(nn.Linear):
+    def __init__(
+            self, 
+            in_features: int,
+            out_features: int,
+            r: int = 8,
+            lora_alpha: int = 1,
+            **kwargs
+    ):
+        self.r = r
+        self.in_features = in_features
+        self.out_features = out_features
+        self.lora_alpha = lora_alpha
 
-# new attention layer class
+        nn.Linear.__init__(self, in_features, out_features, **kwargs)
 
-# replace attention modules with new module
+        # from https://github.com/microsoft/LoRA/blob/main/loralib/layers.py
+        if r > 0:
+            self.lora_A = nn.Parameter(self.weight.new_zeros((r, in_features)))
+            self.lora_B = nn.Parameter(self.weight.new_zeros((out_features, r)))
+            self.scaling = self.lora_alpha / self.r
+            # Freezing the pre-trained weight matrix
+            self.weight.requires_grad = False
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        # from https://github.com/microsoft/LoRA/blob/main/loralib/layers.py
+        nn.Linear.reset_parameters(self)
+        if hasattr(self, 'lora_A'):
+            # initialize B the same way as the default for nn.Linear and A to zero
+            # this is different than what is described in the paper but should not affect performance
+            nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
+            nn.init.zeros_(self.lora_B)
+
+    def forward(self, x: torch.Tensor):
+        if self.r > 0:
+            result = F.linear(x, self.weight, bias=self.bias)            
+            result += (x @ self.lora_A.transpose(0, 1) @ self.lora_B.transpose(0, 1)) * self.scaling
+            return result
+        else:
+            return F.linear(x, self.weight, bias=self.bias)
+
+# replace linear layers in model recursively
+def replace_linear_with_lora(module):
+    for name, child in module.named_children():
+        if isinstance(child, nn.Linear):
+            setattr(module, name, LoRALinear(child.in_features, child.out_features))
+        else:
+            replace_linear_with_lora(child)
+
+replace_linear_with_lora(model)
+
+# inspect new model
+print(model)
 
 # load chat dataset
+dataset_name = "timdettmers/openassistant-guanaco"
+ft_dataset = load_dataset(dataset_name, split="train")
 
 # train model
+log_dir = "/scratch/checkpoints/test-sft/opt1.3b_768/"
+batch_size = 4
+context_length = 768
+args = transformers.TrainingArguments(log_dir, 
+    per_device_train_batch_size=batch_size, 
+    logging_first_step=True,
+    logging_steps=20,
+    save_steps=100,
+)
+
+class PrinterCallback(transformers.TrainerCallback):
+    def on_log(self, args, state, control, model, logs=None, **kwargs):
+        start_text = "### Human: When the weather is sunny, what color is the sky?### Assistant:"
+        generate(start_text, model, tokenizer, num_steps=200, until="###")
+
+trainer = SFTTrainer(
+    model,
+    args=args,
+    train_dataset=ft_dataset,
+    dataset_text_field="text",
+    max_seq_length=context_length,
+    callbacks=[PrinterCallback()]
+)
+trainer.train()
 
 # evaluate finetuned model on benchmark
+category_accs_1300m_ft, avg_acc_1300m_ft = run_benchmark(model, tokenizer, dataset)
 
 # add to spider plot 
+benchmark_data = {"350M-Model": category_accs_350m, "1300M-Model": category_accs_1300m, "1300M-Model-Finetuned": category_accs_1300m_ft, "2700M-Model": category_accs_2700m}
+make_spider_plot(benchmark_data)
