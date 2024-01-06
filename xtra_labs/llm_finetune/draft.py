@@ -139,7 +139,6 @@ def replace_linear_with_lora(module):
     for name, child in module.named_children():
         if isinstance(child, nn.Linear):
             setattr(module, name, LoRALinear(child.in_features, child.out_features, child.weight, child.bias))
-            break
         else:
             replace_linear_with_lora(child)
 
