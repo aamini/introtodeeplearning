@@ -19,7 +19,8 @@ from utils import run_benchmark, make_spider_plot
 # TEXT: overview of LLM lab
 # Load pretrained LLM (medium size model)
 
-model_name = "facebook/opt-1.3b"
+model_name = "facebook/opt-125m"
+# model_name = "facebook/opt-1.3b"
 # had to load non TF version to run benchmarking code
 model = transformers.AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
 tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
@@ -42,9 +43,9 @@ def generate(start_text, model, tokenizer, num_steps=20, temp=1.):
     num_start = len(x)
 
     for i in range(num_steps):
-        input_tensor = tf.reshape(tf.constant(x), [1, -1])
+        input_tensor = torch.tensor(x).view(1, -1).to("cuda")
         logits = model(input_tensor).logits
-        probs = tf.nn.softmax(logits/temp)[0, -1, :]
+        probs = F.softmax(logits/temp, dim=-1)[0, -1, :].cpu().detach()
 
         new_token = predict_next_token(probs, tokenizer)
         x.append(new_token)
@@ -149,11 +150,22 @@ context_length = 768
 model = model.to("cuda")
 for batch in ft_dataset:
     prompt = batch["text"]
-    encoding = tokenizer(prompt)
-    input_ids = torch.IntTensor(encoding["input_ids"]).to("cuda").unsqueeze(0)
-    attention_mask = torch.Tensor(encoding["attention_mask"]).to("cuda").unsqueeze(0)
-    outputs = model(input_ids, attention_mask)
     
+    # encode with tokenizer
+    x = tokenizer.encode(prompt)
+    x_tensor = torch.tensor(x).view(1, -1).to("cuda")
+    input_tensor = x_tensor[:,:context_length]
+    target_next_word = x_tensor[:,context_length]
+
+    # run through model
+    logits = model(input_tensor).logits
+
+    probs = F.softmax(logits, dim=-1)[0, -1, :].cpu().detach()
+    new_token = np.random.choice(len(probs), p=probs.numpy())
+    print(tokenizer.decode(new_token), end='', flush=True)
+
+    # apply loss
+
 
 # evaluate finetuned model on benchmark
 category_accs_1300m_ft, avg_acc_1300m_ft = run_benchmark(model, tokenizer, dataset)
