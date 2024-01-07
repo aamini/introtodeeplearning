@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 import transformers
+from trl import SFTTrainer
 from tqdm import tqdm
 
 from utils import run_benchmark, make_spider_plot
@@ -54,6 +55,40 @@ def generate(start_text, model, tokenizer, num_steps=20, temp=1.):
     output = tokenizer.decode(x[num_start:])
     return output
 
+def generate_pt(model, tokenizer, text, num_steps=50, until=None, temp=1.): 
+    device = model.device
+    print(text, end='', flush=True)
+    x = tokenizer.encode(text)
+    enc_until = tokenizer.encode(until)[1:]
+    num_start = len(x)
+
+    decoded = tokenizer.decode(x)
+
+    for step in range(num_steps): 
+        with torch.no_grad():
+            input_tensor = torch.reshape(torch.LongTensor(x), [1, -1]).to(device)
+            logits = model(input_tensor).logits
+            probs = F.softmax(logits/temp, dim=-1)[0, -1, :]
+        probs = probs.detach().cpu().numpy()
+
+        new_token = np.random.choice(len(probs), p=probs)
+        x.append(new_token)
+
+        new_decoded = tokenizer.decode(x)
+        new_part = new_decoded[len(decoded):]
+        decoded = new_decoded
+
+        print(new_part, end='', flush=True)
+        text += new_part
+
+        if len(x) >= len(until) and text[-len(until):] == until:
+            break 
+        
+    
+    output = tokenizer.decode(x[num_start:])
+    print("\n", flush=True)
+    return output
+
 # Test autoregressive generation
 # while True: 
 #     print("\n\n\n\n\n")
@@ -87,13 +122,30 @@ benchmark_dataset = pd.read_csv("benchmark.csv")
 # benchmark_data = {"350M-Model": category_accs_1300m}
 # make_spider_plot(benchmark_data)
 
+def print_lora_params(module, layer_type):
+    summ = 0
+    for name, child in module.named_children():
+        if isinstance(child, layer_type):
+            num_params = sum(p.numel() for p in child.parameters() if p.requires_grad)
+
+            print(name, num_params, child.in_features, child.out_features, (child.in_features * 8 + child.out_features * 8 == num_params))
+            
+            summ += num_params
+        else:
+            summ += print_lora_params(child, layer_type)
+    
+    return summ
+
 # Part 2
 
 # inspect current model
 # print(model)
-layer = model.lm_head
-print(layer.weight.shape)
-print(sum(p.numel() for p in layer.parameters() if p.requires_grad))
+
+# summ = print_lora_params(model, nn.Linear)
+
+# print("with function", summ)
+
+# print("without function", sum(p.numel() for p in model.parameters() if p.requires_grad))
 
 # # freeze all parameter gradients
 for param in model.parameters():
@@ -149,8 +201,14 @@ def replace_linear_with_lora(module):
 
 replace_linear_with_lora(model)
 
-layer = model.lm_head
-print(sum(p.numel() for p in layer.parameters() if p.requires_grad))
+
+
+# summ = print_lora_params(model, LoRALinear)
+
+# print("with function", summ)
+
+# print("without function", sum(p.numel() for p in model.parameters() if p.requires_grad))
+
 
 # inspect new model
 # print(model)
@@ -169,47 +227,73 @@ num_epochs = 5
 
 model = model.to("cuda")
 
+### Train the model 
+# Define some training args
+args = transformers.TrainingArguments("/home/dnori/introtodeeplearning/xtra_labs/llm_finetune/outputs", 
+    per_device_train_batch_size=1, 
+    logging_first_step=True,
+    logging_steps=20,
+    save_steps=100,
+)
 
-for epoch in range(num_epochs):
-    total_loss = 0
-    num_batches = 0
+# Define a callback to check the progress on a sample question
+class PrinterCallback(transformers.TrainerCallback):
+    def on_log(self, args, state, control, model, logs=None, **kwargs):
+        start_text = "### Human: When the weather is sunny, what color is the sky?### Assistant:"
+        generate_pt(model, tokenizer, start_text, num_steps=200, until="###")
 
-    for batch in tqdm(ft_dataset):
-        prompt = batch["text"]
+# Actually train the model
+trainer = SFTTrainer(
+    model,
+    args=args,
+    train_dataset=ft_dataset,
+    dataset_text_field="text",
+    max_seq_length=context_length,
+    callbacks=[PrinterCallback()]
+)
+trainer.train()
+
+
+# for epoch in range(num_epochs):
+#     total_loss = 0
+#     num_batches = 0
+
+#     for batch in tqdm(ft_dataset):
+#         prompt = batch["text"]
         
-        # encode with tokenizer
-        x = tokenizer.encode(prompt)
-        x_tensor = torch.tensor(x).view(1, -1).to("cuda")
-        max_len = min(context_length, x_tensor.shape[1]-1)
-        selected_len = random.randint(1,max_len)
+#         # encode with tokenizer
+#         x = tokenizer.encode(prompt)
+#         x_tensor = torch.tensor(x).view(1, -1).to("cuda")
+#         max_len = min(context_length, x_tensor.shape[1]-1)
+#         selected_len = random.randint(1,max_len)
 
-        input_tensor = x_tensor[:,:selected_len]
-        target_tensor = x_tensor[0,1:selected_len+1]
+#         input_tensor = x_tensor[:,:selected_len]
+#         target_tensor = x_tensor[0,1:selected_len+1]
 
-         # zero gradients
-        optimizer.zero_grad()
+#          # zero gradients
+#         optimizer.zero_grad()
 
-        # run through model
-        logits = model(input_tensor).logits[0]
+#         # run through model
+#         logits = model(input_tensor).logits[0]
 
-        # apply loss
-        loss = loss_fn(logits, target_tensor)
+#         # apply loss
+#         loss = loss_fn(logits, target_tensor)
 
-        # backpropagation
-        loss.backward()
+#         # backpropagation
+#         loss.backward()
 
-        # optimizer step
-        optimizer.step()
+#         # optimizer step
+#         optimizer.step()
 
-        total_loss += loss.item()
-        num_batches += 1
+#         total_loss += loss.item()
+#         num_batches += 1
 
-    # Print average loss for the epoch
-    average_loss = total_loss / num_batches
-    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {average_loss}")
+#     # Print average loss for the epoch
+#     average_loss = total_loss / num_batches
+#     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {average_loss}")
 
-# evaluate finetuned model on benchmark
-category_accs_1300m_ft, avg_acc_1300m_ft = run_benchmark(model, tokenizer, benchmark_dataset)
+# # evaluate finetuned model on benchmark
+# category_accs_1300m_ft, avg_acc_1300m_ft = run_benchmark(model, tokenizer, benchmark_dataset)
 
 # add to spider plot 
 # benchmark_data = {"350M-Model": category_accs_350m, "1300M-Model": category_accs_1300m, "1300M-Model-Finetuned": category_accs_1300m_ft, "2700M-Model": category_accs_2700m}
