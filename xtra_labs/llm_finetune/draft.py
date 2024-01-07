@@ -23,8 +23,8 @@ from utils import run_benchmark, make_spider_plot
 # TEXT: overview of LLM lab
 # Load pretrained LLM (medium size model)
 
-model_name = "facebook/opt-125m"
 # model_name = "facebook/opt-1.3b"
+model_name = "facebook/opt-125m"
 # had to load non TF version to run benchmarking code
 model = transformers.AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
 tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
@@ -66,7 +66,7 @@ def generate(start_text, model, tokenizer, num_steps=20, temp=1.):
 # TEXT: some background on LLM benchmarking
 # Load benchmark dataset and evaluate model
 benchmark_dataset = pd.read_csv("benchmark.csv")
-# category_accs_1300m, avg_acc_1300m = run_benchmark(model, tokenizer, benchmark_dataset)
+category_accs_1300m, avg_acc_1300m = run_benchmark(model, tokenizer, benchmark_dataset)
 
 # TEXT: ask them to make a prediction on how accuracy will be affected by different model sizes
 
@@ -87,17 +87,18 @@ benchmark_dataset = pd.read_csv("benchmark.csv")
 # Spider plot
 
 # benchmark_data = {"350M-Model": category_accs_350m, "1300M-Model": category_accs_1300m, "2700M-Model": category_accs_2700m}
+# benchmark_data = {"350M-Model": category_accs_1300m}
 # make_spider_plot(benchmark_data)
 
 # Part 2
 
-def count_grad_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
 # inspect current model
 # print(model)
-first_lin_layer = model.model.decoder.layers[0].self_attn.k_proj
-print(count_grad_parameters(model))
+print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+
+# # freeze all parameter gradients
+for param in model.parameters():
+    param.requires_grad = False
 
 # new LoRA linear layer class
 class LoRALinear(nn.Module):
@@ -108,7 +109,8 @@ class LoRALinear(nn.Module):
             pretrained_weight: torch.Tensor,
             pretrained_bias: torch.Tensor,
             r: int = 8,
-            lora_alpha: int = 1,
+            lora_alpha: int = 8,
+            lora_dropout: float = 0.1,
             **kwargs
     ):
         super(LoRALinear, self).__init__()
@@ -121,17 +123,21 @@ class LoRALinear(nn.Module):
         self.weight = nn.Parameter(pretrained_weight)
         self.weight.requires_grad = False
 
-        self.bias = nn.Parameter(pretrained_bias)
-        self.bias.requires_grad = False
+        if pretrained_bias is not None:
+            self.bias = nn.Parameter(pretrained_bias)
+            self.bias.requires_grad = False
+        else:
+            self.bias = None
 
         # from https://github.com/microsoft/LoRA/blob/main/loralib/layers.py
         self.lora_A = nn.Parameter(self.weight.new_zeros((r, in_features)))
         self.lora_B = nn.Parameter(self.weight.new_zeros((out_features, r)))
         self.scaling = self.lora_alpha / self.r
+        self.lora_dropout = nn.Dropout(p=lora_dropout)
         
     def forward(self, x: torch.Tensor):
-        result = F.linear(x, self.weight, bias=self.bias)            
-        result += self.lora_A.transpose(0, 1) @ self.lora_B.transpose(0, 1) * self.scaling
+        result = F.linear(x, self.weight, bias=self.bias)
+        result += (self.lora_dropout(x) @ self.lora_A.transpose(0, 1) @ self.lora_B.transpose(0, 1)) * self.scaling
         return result
 
 # replace linear layers in model recursively
@@ -144,10 +150,10 @@ def replace_linear_with_lora(module):
 
 replace_linear_with_lora(model)
 
+print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+
 # inspect new model
-first_lin_layer = model.model.decoder.layers[0].self_attn.k_proj
-print(count_grad_parameters(model))
-exit()
+# print(model)
 
 # load chat dataset
 dataset_name = "timdettmers/openassistant-guanaco"
@@ -206,4 +212,5 @@ category_accs_1300m_ft, avg_acc_1300m_ft = run_benchmark(model, tokenizer, bench
 
 # add to spider plot 
 # benchmark_data = {"350M-Model": category_accs_350m, "1300M-Model": category_accs_1300m, "1300M-Model-Finetuned": category_accs_1300m_ft, "2700M-Model": category_accs_2700m}
-# make_spider_plot(benchmark_data)
+benchmark_data = {"350M-Model": category_accs_1300m, "350M-Model-Finetuned": category_accs_1300m_ft}
+make_spider_plot(benchmark_data)
