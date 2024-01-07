@@ -6,14 +6,12 @@ import math
 import numpy as np
 import pandas as pd
 import random
-import tensorflow as tf
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 import transformers
-from trl import SFTTrainer
 from tqdm import tqdm
 
 from utils import run_benchmark, make_spider_plot
@@ -25,7 +23,6 @@ from utils import run_benchmark, make_spider_plot
 
 # model_name = "facebook/opt-1.3b"
 model_name = "facebook/opt-125m"
-# had to load non TF version to run benchmarking code
 model = transformers.AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
 tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
 
@@ -66,7 +63,7 @@ def generate(start_text, model, tokenizer, num_steps=20, temp=1.):
 # TEXT: some background on LLM benchmarking
 # Load benchmark dataset and evaluate model
 benchmark_dataset = pd.read_csv("benchmark.csv")
-category_accs_1300m, avg_acc_1300m = run_benchmark(model, tokenizer, benchmark_dataset)
+# category_accs_1300m, avg_acc_1300m = run_benchmark(model, tokenizer, benchmark_dataset)
 
 # TEXT: ask them to make a prediction on how accuracy will be affected by different model sizes
 
@@ -94,7 +91,9 @@ category_accs_1300m, avg_acc_1300m = run_benchmark(model, tokenizer, benchmark_d
 
 # inspect current model
 # print(model)
-print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+layer = model.lm_head
+print(layer.weight.shape)
+print(sum(p.numel() for p in layer.parameters() if p.requires_grad))
 
 # # freeze all parameter gradients
 for param in model.parameters():
@@ -150,7 +149,8 @@ def replace_linear_with_lora(module):
 
 replace_linear_with_lora(model)
 
-print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+layer = model.lm_head
+print(sum(p.numel() for p in layer.parameters() if p.requires_grad))
 
 # inspect new model
 # print(model)
@@ -168,6 +168,7 @@ optimizer = Adam(model.parameters(), lr=learning_rate)
 num_epochs = 5
 
 model = model.to("cuda")
+
 
 for epoch in range(num_epochs):
     total_loss = 0
@@ -212,5 +213,5 @@ category_accs_1300m_ft, avg_acc_1300m_ft = run_benchmark(model, tokenizer, bench
 
 # add to spider plot 
 # benchmark_data = {"350M-Model": category_accs_350m, "1300M-Model": category_accs_1300m, "1300M-Model-Finetuned": category_accs_1300m_ft, "2700M-Model": category_accs_2700m}
-benchmark_data = {"350M-Model": category_accs_1300m, "350M-Model-Finetuned": category_accs_1300m_ft}
-make_spider_plot(benchmark_data)
+# benchmark_data = {"350M-Model": category_accs_1300m, "350M-Model-Finetuned": category_accs_1300m_ft}
+# make_spider_plot(benchmark_data)
