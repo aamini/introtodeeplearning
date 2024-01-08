@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+iimport matplotlib.pyplot as plt
 import tensorflow as tf
 import time
 import numpy as np
@@ -31,7 +31,7 @@ def plot_sample(x,y,vae):
     plt.imshow(recon[idx])
     plt.grid(False)
 
-    plt.show()
+    # plt.show()
 
 
 
