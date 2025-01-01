@@ -48,7 +48,6 @@ def plot_value_prediction(i, predictions_array, true_label):
 
 class DatasetLoader(tf.keras.utils.Sequence):
     def __init__(self, data_path, batch_size, training=True):
-
         print("Opening {}".format(data_path))
         sys.stdout.flush()
 
